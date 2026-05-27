@@ -4,19 +4,15 @@
   "description": "Agent-native source control built around permissioned source graphs.",
   "theme": "almond",
   "colors": {
-    "primary": "#2f6fed",
-    "light": "#2f6fed",
-    "dark": "#8aa1ff"
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
   },
   "navigation": {
     "groups": [
       {
         "group": "Start Here",
-        "pages": [
-          "docs/overview",
-          "docs/quickstart",
-          "docs/status"
-        ]
+        "pages": ["docs/overview", "docs/quickstart", "docs/status"]
       },
       {
         "group": "Core Model",
