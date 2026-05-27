@@ -103,7 +103,8 @@ func generateCompatFile(path, mode, content string) (compatFileResult, error) {
 }
 
 func generatedGitignore(manifest *BootstrapManifest) string {
-	patterns := append([]string{".glyph/**", ".git/**"}, manifest.GenesisImport.Exclude...)
+	patterns := append([]string{".glyph/**"}, manifest.GenesisImport.Exclude...)
+	patterns = removeStrings(patterns, ".git/**")
 	return generatedPatternFile("Glyph exclude rules for Git compatibility.", uniqueStrings(patterns))
 }
 
@@ -135,6 +136,22 @@ func uniqueStrings(in []string) []string {
 			continue
 		}
 		seen[s] = true
+		out = append(out, s)
+	}
+	return out
+}
+
+func removeStrings(in []string, values ...string) []string {
+	remove := map[string]bool{}
+	for _, value := range values {
+		remove[strings.TrimSpace(value)] = true
+	}
+	out := make([]string, 0, len(in))
+	for _, s := range in {
+		s = strings.TrimSpace(s)
+		if remove[s] {
+			continue
+		}
 		out = append(out, s)
 	}
 	return out

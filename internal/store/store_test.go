@@ -182,10 +182,13 @@ func TestExportGitGeneratesCompatibilityFiles(t *testing.T) {
 		t.Fatalf("generated = %#v, want .gitignore and .gitinclude", result.Generated)
 	}
 	gitignore := read(t, filepath.Join(out, ".gitignore"))
-	for _, want := range []string{".glyph/**", ".git/**", "node_modules/**"} {
+	for _, want := range []string{".glyph/**", "node_modules/**"} {
 		if !strings.Contains(gitignore, want) {
 			t.Fatalf(".gitignore missing %q:\n%s", want, gitignore)
 		}
+	}
+	if strings.Contains(gitignore, ".git/**") {
+		t.Fatalf(".gitignore should not include Git's own metadata directory:\n%s", gitignore)
 	}
 	gitinclude := read(t, filepath.Join(out, ".gitinclude"))
 	for _, want := range []string{"glyph.yaml", "docs/specs/**", "internal/**"} {
