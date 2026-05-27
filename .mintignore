@@ -1,0 +1,14 @@
+.glyph/
+.git/
+node_modules/
+.DS_Store
+.agent/
+.agents/
+.tmp-*/
+/tmp/
+cmd/
+internal/
+go.mod
+go.sum
+glyph.yaml
+skills-lock.json
