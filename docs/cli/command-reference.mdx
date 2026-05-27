@@ -1,0 +1,152 @@
+---
+title: "Command Reference"
+description: "Every Glyph prototype 0 command, argument, flag, and status."
+---
+
+# Command Reference
+
+All commands support `--json` as a global flag. JSON mode is the preferred interface for agents because successful commands return `{ "ok": true, "type": "...", "data": ... }` and failures return `{ "ok": false, "error": ... }`.
+
+## Store Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph init` | Initialize `.glyph/` in the current project. | None | None |
+| `glyph import <path>` | Import files from a workspace path into the public source graph. | `path`: directory to import | None |
+| `glyph status` | Show store status, database path, and object counts. | None | None |
+| `glyph graph` | Show source graph summary. | None | None |
+
+```sh
+glyph init --json
+glyph import . --json
+glyph status --json
+glyph graph --json
+```
+
+## Work Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph work start <name>` | Create a work context from a realm projection. | `name` | `--from <realm>` defaults to `public` |
+| `glyph work list` | List work contexts. | None | None |
+| `glyph work status <name>` | Show one work context. | `name` | None |
+| `glyph work snapshot <name>` | Create a manual snapshot for a work context. | `name` | None |
+| `glyph work claim <name>` | Claim a work context for a user or agent. | `name` | `--actor`, `--mode`, `--ttl` |
+| `glyph work heartbeat <name>` | Refresh an active claim. | `name` | `--actor`, `--ttl` |
+| `glyph work release <name>` | Release an active claim. | `name` | `--actor` |
+| `glyph work conflicts <name>` | Detect conflicts with other active work. | `name` | None |
+| `glyph work depend <work> <depends-on>` | Record ordering between work contexts. | `work`, `depends-on` | None |
+| `glyph work prune <name>` | Remove a completed work projection while retaining graph history. | `name` | None |
+| `glyph work discard <name>` | Prototype placeholder for policy-controlled discard. | `name` | Not implemented in prototype 0 |
+
+```sh
+glyph work start docs-update --from public --json
+glyph work claim docs-update --actor agent:codex:docs --mode exclusive --ttl 30m --json
+glyph work heartbeat docs-update --actor agent:codex:docs --ttl 30m --json
+glyph work conflicts docs-update --json
+glyph work release docs-update --actor agent:codex:docs --json
+```
+
+## File Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph read <work> <path>` | Read a file from a work context. | `work`, `path` | None |
+| `glyph write <work> <path>` | Write stdin into a file in a work context. | `work`, `path` | `--reason` |
+| `glyph project <work> <dir>` | Materialize a work context into a filesystem directory. | `work`, `dir` | None |
+| `glyph diff <work>` | Show file-level changes in a work context. | `work` | None |
+
+`glyph read --json` returns UTF-8 content directly when possible and base64 for binary data.
+
+```sh
+glyph read docs-update README.md --json
+glyph write docs-update README.md --reason "refresh overview" --json < README.md
+glyph project docs-update .glyph/workspaces/docs-update --json
+glyph diff docs-update --json
+```
+
+## Snapshot And Publication Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph checkpoint <work>` | Create a named milestone snapshot. | `work` | `--message` |
+| `glyph publish <work>` | Publish a work context into a realm. | `work` | `--to`, `--mode` |
+| `glyph publication list` | List publications. | None | None |
+| `glyph publication inspect <id>` | Prototype placeholder for publication metadata inspection. | `id` | Not implemented in prototype 0 |
+
+Publication modes are `squash` and `preserve`. `squash` publishes the final state as one public transition. `preserve` keeps the work context's snapshot history visible in the destination realm.
+
+```sh
+glyph checkpoint docs-update --message "docs ready" --json
+glyph publish docs-update --to public --mode squash --json
+glyph publication list --json
+```
+
+## Hook Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph hook list` | List installed local hooks. | None | None |
+| `glyph hook run <event>` | Run one local hook event. | `event` | `--work`, `--to`, `--mode` |
+
+Prototype 0 looks for executable hook files under `.glyph/hooks/`. The currently meaningful events are `pre-publish` and `post-publish`.
+
+```sh
+glyph hook list --json
+glyph hook run pre-publish --work docs-update --to public --mode squash --json
+```
+
+## Git And Remote Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph export git` | Export a realm to a clean Git repository. | None | `--realm`, `--out`, `--gitignore`, `--gitinclude` |
+| `glyph remote add <name> <spec>` | Add an export remote. | `name`, `spec` | `--mode` |
+| `glyph remote list` | List configured remotes. | None | None |
+| `glyph remote inspect <name>` | Show remote metadata. | `name` | None |
+| `glyph remote sync <name>` | Export and push a remote. | `name` | None |
+
+Git compatibility modes for generated files are `none`, `generated`, and `overwrite`. Defaults come from `glyph.yaml`.
+
+```sh
+glyph export git --realm public --out .glyph/exports/origin --gitignore generated --gitinclude generated --json
+glyph remote add origin github:OWNER/REPO --mode export-only --json
+glyph remote sync origin --json
+```
+
+## Mount Commands
+
+| Command | Purpose | Arguments | Status |
+| --- | --- | --- | --- |
+| `glyph mount add <path> <spec>` | Planned external source mount registration. | `path`, `spec` | Deferred from prototype 0 |
+| `glyph mount list` | Planned mount listing. | None | Deferred from prototype 0 |
+| `glyph mount update <path>` | Planned mount refresh. | `path` | Deferred from prototype 0 |
+| `glyph mount inspect <path>` | Planned mount inspection. | `path` | Deferred from prototype 0 |
+
+Mounts are the future equivalent of linking another source repository into a subdirectory while preserving separate upstream identity.
+
+## Visualizer Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph viz export` | Export a static local mesh visualizer. | None | `--out` |
+
+When `--out` is omitted, Glyph reads `defaults.viz.export.out` from `glyph.yaml` and falls back to `.glyph/visualizer`.
+
+```sh
+glyph viz export --json
+glyph viz export --out .glyph/visualizer --json
+```
+
+## Completion And Help
+
+Cobra also provides generated shell completion and help commands:
+
+```sh
+glyph completion bash
+glyph completion zsh
+glyph help work
+glyph help export git
+```
+
+These are inherited from the CLI framework and are useful for humans, but agents should prefer `--json` command output over parsing help text.

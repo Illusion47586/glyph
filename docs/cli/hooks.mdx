@@ -1,0 +1,51 @@
+---
+title: "Hooks"
+description: "Local extension points for publish-time checks and automation."
+---
+
+# Hooks
+
+Glyph hooks are local executable files under `.glyph/hooks/`. They are similar in spirit to Git hooks, but they receive Glyph-specific context such as work context, destination realm, and publication mode.
+
+## Events
+
+Prototype 0 recognizes publish-oriented hook events:
+
+| Event | When to use it |
+| --- | --- |
+| `pre-publish` | Validate a work context before publication. |
+| `post-publish` | Run local follow-up automation after publication. |
+
+## List Hooks
+
+```sh
+glyph hook list --json
+```
+
+The response reports hook paths and whether each hook is executable.
+
+## Run A Hook
+
+```sh
+glyph hook run pre-publish --work docs-update --to public --mode squash --json
+```
+
+Flags:
+
+| Flag | Meaning |
+| --- | --- |
+| `--work` | Work context name passed to the hook. |
+| `--to` | Destination realm. Defaults to `public`. |
+| `--mode` | Publication mode. Defaults to `squash`. |
+
+If a hook is not installed, Glyph returns a successful response with `installed: false`. If an installed hook exits non-zero, publication-oriented commands should treat that as a failed check.
+
+## Suggested Hook Uses
+
+- Run tests before publishing.
+- Enforce formatting.
+- Check generated docs.
+- Prevent accidental publication of private paths.
+- Record audit events for local agent runs.
+
+Hooks are intentionally local in prototype 0. Policy-backed, portable hooks belong in a later prototype once identity and signing are stronger.

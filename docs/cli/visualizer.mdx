@@ -33,3 +33,17 @@ The graph includes:
 - hooks
 - remotes
 - mounts
+
+## Output Directory
+
+Use `--out` to choose a destination:
+
+```sh
+glyph viz export --out .glyph/visualizer --json
+```
+
+When `--out` is omitted, Glyph reads `defaults.viz.export.out` from `glyph.yaml`.
+
+## When To Use It
+
+The visualizer is useful when several agents are active at once. It gives humans and agents a local view of the mesh: which work contexts exist, which publications landed, what content was stored, and which hooks or remotes are configured.

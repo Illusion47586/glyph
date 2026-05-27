@@ -27,3 +27,57 @@ The sync process:
 5. pushes to GitHub
 
 The `.glyph/` directory itself is never pushed.
+
+## Manual Git Export
+
+Use `glyph export git` when you want a local Git repository without pushing it.
+
+```sh
+glyph export git \
+  --realm public \
+  --out .glyph/exports/origin \
+  --gitignore generated \
+  --gitinclude generated \
+  --json
+```
+
+Flags:
+
+| Flag | Meaning |
+| --- | --- |
+| `--realm` | Realm to export. Defaults to `public`. |
+| `--out` | Output directory. Required. |
+| `--gitignore` | Controls `.gitignore` generation: `none`, `generated`, or `overwrite`. |
+| `--gitinclude` | Controls `.gitinclude` generation: `none`, `generated`, or `overwrite`. |
+
+If the flags are omitted, Glyph reads defaults from `glyph.yaml`.
+
+## Remote Management
+
+```sh
+glyph remote list --json
+glyph remote inspect origin --json
+glyph remote sync origin --json
+```
+
+Remote specs can use the GitHub shorthand:
+
+```text
+github:OWNER/REPO
+```
+
+Glyph translates that to the SSH URL `git@github.com:OWNER/REPO.git` during sync.
+
+## Compatibility Files
+
+Glyph can generate `.gitignore` and `.gitinclude` from the project policy in `glyph.yaml`. The default for this project is:
+
+```yaml
+defaults:
+  export:
+    git:
+      gitignore: generated
+      gitinclude: generated
+```
+
+Use `generated` to create a file only when it does not already exist, `overwrite` to replace it, and `none` to skip generation.

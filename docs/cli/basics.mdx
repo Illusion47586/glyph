@@ -26,3 +26,61 @@ Errors use:
 ```
 
 Project defaults live in `glyph.yaml`.
+
+## Command Shape
+
+Glyph uses a small number of nouns:
+
+| Noun | Meaning |
+| --- | --- |
+| `work` | Mutable work contexts for humans and agents. |
+| `publication` | Records of work merged into a realm. |
+| `remote` | Export targets such as GitHub repositories. |
+| `mount` | Future external source mounts. |
+| `hook` | Local executable automation. |
+| `viz` | Local mesh visualizer exports. |
+
+Several high-frequency commands live at the top level for agent ergonomics:
+
+```sh
+glyph read <work> <path> --json
+glyph write <work> <path> --reason "why" --json < file
+glyph diff <work> --json
+glyph checkpoint <work> --message "milestone" --json
+glyph publish <work> --to public --mode squash --json
+```
+
+## Defaults
+
+`glyph.yaml` stores default values that should not be repeated on every command. Current defaults cover Git compatibility generation and visualizer output:
+
+```yaml
+defaults:
+  export:
+    git:
+      gitignore: generated
+      gitinclude: generated
+  viz:
+    export:
+      out: .glyph/visualizer
+```
+
+Command flags still win when explicitly provided.
+
+## Exit Behavior
+
+Commands return a non-zero exit code on failure. In JSON mode, agents should inspect both the process exit code and the response body:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "error",
+    "message": "work context not found"
+  }
+}
+```
+
+## Full Reference
+
+See [Command Reference](/docs/cli/command-reference) for every command, flag, argument, and prototype status.

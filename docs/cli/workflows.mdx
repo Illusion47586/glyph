@@ -5,34 +5,68 @@ description: "Common Glyph CLI workflows."
 
 # Workflows
 
+## Bootstrap A Project
+
+```sh
+glyph init --json
+glyph import . --json
+glyph status --json
+```
+
+`glyph init` creates `.glyph/`. `glyph import .` reads the paths allowed by `glyph.yaml` and stores the initial public graph.
+
 ## Start Work
 
 ```sh
 glyph work start docs-update --from public --json
 ```
 
-## Read And Write
+## Claim Work For An Agent
+
+```sh
+glyph work claim docs-update --actor agent:codex:docs-update --mode exclusive --ttl 30m --json
+glyph work heartbeat docs-update --actor agent:codex:docs-update --ttl 30m --json
+```
+
+Claims help multiple agents avoid silently editing the same work context. Heartbeats keep a long-running task alive.
+
+## Read And Write Through Glyph
 
 ```sh
 glyph read docs-update README.md --json
 glyph write docs-update README.md --reason "update readme" --json < README.md
 ```
 
-## Review
+## Review And Checkpoint
 
 ```sh
 glyph diff docs-update --json
 glyph checkpoint docs-update --message "ready for review" --json
+glyph work conflicts docs-update --json
 ```
 
-## Publish
+## Publish To A Realm
 
 ```sh
 glyph publish docs-update --to public --mode squash --json
+glyph publication list --json
 ```
 
-## Prune
+Use `--mode squash` when the public graph should show one clean publication. Use `--mode preserve` when the intermediate work history should remain visible.
+
+## Prune The Projection
 
 ```sh
 glyph work prune docs-update --json
 ```
+
+Pruning removes the materialized work projection. It does not delete the source graph history.
+
+## Export To GitHub
+
+```sh
+glyph remote add origin github:OWNER/REPO --mode export-only --json
+glyph remote sync origin --json
+```
+
+`remote sync` exports the `public` realm to a clean Git repository and pushes it. The `.glyph/` store is not part of the exported repository.

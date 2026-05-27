@@ -31,8 +31,11 @@
         "group": "CLI",
         "pages": [
           "docs/cli/basics",
+          "docs/cli/command-reference",
+          "docs/cli/agent-guide",
           "docs/cli/workflows",
           "docs/cli/github-export",
+          "docs/cli/hooks",
           "docs/cli/visualizer"
         ]
       },
