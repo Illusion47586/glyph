@@ -1,0 +1,28 @@
+---
+title: "CLI Basics"
+description: "Agent-friendly Glyph command conventions."
+---
+
+# CLI Basics
+
+Glyph commands are non-interactive by default. Use `--json` for agent-friendly output.
+
+```sh
+glyph status --json
+glyph graph --json
+glyph work list --json
+```
+
+Successful commands use:
+
+```json
+{"ok":true,"type":"status","data":{}}
+```
+
+Errors use:
+
+```json
+{"ok":false,"error":{"code":"not_found","message":"work context not found"}}
+```
+
+Project defaults live in `glyph.yaml`.

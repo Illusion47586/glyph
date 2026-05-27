@@ -15,6 +15,7 @@ identity:
 genesis_import:
   include:
     - glyph.yaml
+    - docs.json
     - .gitignore
     - README.md
     - skills-lock.json
@@ -23,6 +24,9 @@ genesis_import:
     - .agents/skills/glyph/SKILL.md
     - cmd/**
     - internal/**
+    - docs/*.mdx
+    - docs/concepts/**
+    - docs/cli/**
     - docs/specs/**
     - docs/plans/**
     - docs/decisions/**

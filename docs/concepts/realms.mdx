@@ -1,0 +1,17 @@
+---
+title: "Realms"
+description: "Permissioned source views in Glyph."
+---
+
+# Realms
+
+A realm is a named, permissioned view over the source graph.
+
+The default realms are:
+
+- `public`: source that can be exported to GitHub
+- `maintainers`: maintainer-visible source and metadata
+
+Realms are not Git branches. A branch is a pointer in Git; a realm is a visibility boundary with policy.
+
+Publication moves selected work into a destination realm. Export then materializes a realm into Git or another compatibility target.

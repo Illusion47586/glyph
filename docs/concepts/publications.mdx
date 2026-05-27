@@ -1,0 +1,22 @@
+---
+title: "Publications"
+description: "Explicit visibility changes instead of implicit pushes."
+---
+
+# Publications
+
+A publication is the act of moving selected work into a destination realm.
+
+Publication is not the same thing as a Git commit. A publication may export as one commit, multiple commits, a GitHub pull request, or another compatibility artifact.
+
+## Modes
+
+```sh
+glyph publish auth-fix --to public --mode squash
+glyph publish auth-fix --to public --mode preserve
+```
+
+- `squash`: public history sees one coherent event
+- `preserve`: selected checkpoints can become visible history
+
+In both modes, detailed Glyph history can remain privately retained according to policy.

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Glyph",
+  "description": "Agent-native source control built around permissioned source graphs.",
+  "theme": "mint",
+  "colors": {
+    "primary": "#2f6fed",
+    "light": "#2f6fed",
+    "dark": "#8aa1ff"
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Start Here",
+        "pages": [
+          "docs/overview",
+          "docs/quickstart",
+          "docs/status"
+        ]
+      },
+      {
+        "group": "Core Model",
+        "pages": [
+          "docs/concepts/realms",
+          "docs/concepts/work-contexts",
+          "docs/concepts/publications",
+          "docs/concepts/git-compatibility"
+        ]
+      },
+      {
+        "group": "CLI",
+        "pages": [
+          "docs/cli/basics",
+          "docs/cli/workflows",
+          "docs/cli/github-export",
+          "docs/cli/visualizer"
+        ]
+      },
+      {
+        "group": "Specs",
+        "pages": [
+          "docs/specs/000-bootstrap-and-dogfooding-protocol",
+          "docs/specs/001-realms-permissioned-source-views",
+          "docs/specs/002-work-graph-without-commits-or-branches",
+          "docs/specs/003-agent-native-file-api-and-virtual-workspaces",
+          "docs/specs/004-storage-model-and-object-graph",
+          "docs/specs/005-policy-language-and-threat-model",
+          "docs/specs/006-git-import-export-compatibility",
+          "docs/specs/007-cli-and-agent-api",
+          "docs/specs/008-review-publication-and-conflict-resolution",
+          "docs/specs/009-identity-trust-credentials-and-signing",
+          "docs/specs/010-external-mount-lifecycle",
+          "docs/specs/011-command-runner-and-execution-sandboxing",
+          "docs/specs/012-store-schema-migrations-and-compatibility",
+          "docs/specs/013-concurrency-and-multi-agent-workspaces",
+          "docs/specs/014-hooks-and-automation-extension-points",
+          "docs/specs/015-local-mesh-visualizer"
+        ]
+      }
+    ]
+  }
+}

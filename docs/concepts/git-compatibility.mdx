@@ -1,0 +1,32 @@
+---
+title: "Git Compatibility"
+description: "How Glyph maps to Git and GitHub."
+---
+
+# Git Compatibility
+
+Glyph is canonical. Git and GitHub are compatibility targets.
+
+## Mapping
+
+| Git | Glyph |
+| --- | --- |
+| commit | publication event, checkpoint, snapshot, or imported provenance |
+| branch | work context, realm, or remote tracking view |
+| HEAD | current realm projection pointer or exported Git branch tip |
+| working tree | materialized workspace projection |
+| index | internal implementation detail |
+| merge commit | publication integrating multiple work contexts |
+| tag | named source graph reference or release marker |
+| remote | Glyph remote origin |
+
+## Export
+
+The current prototype exports the `public` realm to a clean Git repository and can push that export to GitHub.
+
+```sh
+glyph export git --realm public --out /tmp/glyph-export --json
+glyph remote sync origin --json
+```
+
+Generated `.gitignore` and `.gitinclude` files come from `glyph.yaml` defaults.

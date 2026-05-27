@@ -1,0 +1,35 @@
+---
+title: "Visualizer"
+description: "Inspect the local Glyph mesh."
+---
+
+# Visualizer
+
+Generate a static local visualizer:
+
+```sh
+glyph viz export --json
+```
+
+By default, this writes:
+
+```text
+.glyph/visualizer/index.html
+.glyph/visualizer/graph.json
+```
+
+The HTML file is self-contained and can be opened directly. `graph.json` is available for agents and tools.
+
+The graph includes:
+
+- realms
+- work contexts
+- snapshots
+- publications
+- source objects
+- content objects
+- claims
+- conflicts
+- hooks
+- remotes
+- mounts

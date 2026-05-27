@@ -1,0 +1,29 @@
+---
+title: "GitHub Export"
+description: "Push Glyph's public realm to GitHub."
+---
+
+# GitHub Export
+
+Glyph can push a clean public projection to GitHub through an export-only remote.
+
+```sh
+glyph remote add origin github:OWNER/REPO --mode export-only --json
+glyph remote sync origin --json
+```
+
+For this repository, GitHub is an export-only mirror:
+
+```text
+github:Illusion47586/glyph
+```
+
+The sync process:
+
+1. materializes the `public` realm
+2. initializes a clean Git repository
+3. generates compatibility files from `glyph.yaml`
+4. preserves the previous remote `main` commit as parent when present
+5. pushes to GitHub
+
+The `.glyph/` directory itself is never pushed.

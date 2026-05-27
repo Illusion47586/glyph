@@ -3,6 +3,7 @@
 # Source: glyph.yaml genesis_import rules.
 
 glyph.yaml
+docs.json
 .gitignore
 README.md
 skills-lock.json
@@ -11,6 +12,9 @@ go.sum
 .agents/skills/glyph/SKILL.md
 cmd/**
 internal/**
+docs/*.mdx
+docs/concepts/**
+docs/cli/**
 docs/specs/**
 docs/plans/**
 docs/decisions/**
