@@ -22,6 +22,7 @@ genesis_import:
     - skills-lock.json
     - go.mod
     - go.sum
+    - scripts/**
     - .agents/skills/glyph/SKILL.md
     - cmd/**
     - internal/**
