@@ -6,6 +6,7 @@ glyph.yaml
 docs.json
 .gitignore
 .mintignore
+style.css
 README.md
 skills-lock.json
 go.mod
