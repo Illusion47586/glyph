@@ -53,6 +53,30 @@ Glyph separates three concerns that Git often blends together:
 - **Who is editing:** the work context and its claim.
 - **When work becomes visible:** the publication event.
 
+## The Hardest Part To Unlearn
+
+Git trained us to ask "what branch am I on?" before almost everything. Glyph wants a different first question:
+
+> What source view am I starting from, and what work context am I changing?
+
+That shift matters because branch names often mix purpose, status, visibility, and collaboration. A branch called `security-fix` might mean:
+
+- private until embargo ends
+- actively edited by one maintainer
+- ready for review but not public
+- a patch that should eventually land in `main`
+
+Glyph gives each of those meanings a place:
+
+| Meaning | Glyph primitive |
+| --- | --- |
+| private until embargo ends | realm |
+| actively edited by one maintainer | work context plus claim |
+| ready for review | checkpoint or publication review state |
+| eventually lands in main | publication to `public` |
+
+Once those meanings are separate, the workflow becomes easier for agents to follow because each command has a narrow job.
+
 ## Common Workflow Translation
 
 ### Start A Feature

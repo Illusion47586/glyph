@@ -15,3 +15,49 @@ The default realms are:
 Realms are not Git branches. A branch is a pointer in Git; a realm is a visibility boundary with policy.
 
 Publication moves selected work into a destination realm. Export then materializes a realm into Git or another compatibility target.
+
+## Why This Concept Exists
+
+Git assumes that source visibility is mostly a repository problem. If code is in the repository, it is usually visible to everyone who can read that repository. Teams work around that with private forks, split repositories, embargoed branches, security advisories, environment-variable rituals, and careful timing.
+
+Glyph treats visibility as part of source control.
+
+```mermaid
+flowchart TD
+  graph["one source graph"] --> public["public realm"]
+  graph --> maintainers["maintainers realm"]
+  graph --> security["security realm"]
+  public --> github["GitHub mirror"]
+  maintainers --> review["maintainer review"]
+  security --> embargo["embargoed fix"]
+```
+
+The same project can have multiple views. A realm says "this is the source visible under this policy."
+
+## Realm Versus Branch
+
+| Branch | Realm |
+| --- | --- |
+| Names a line of Git history. | Names a permissioned source view. |
+| Usually used for active work. | Usually used for visibility boundaries. |
+| Merging changes the branch tip. | Publication changes what the realm can see. |
+| Does not explain who may read it. | Exists to make visibility explicit. |
+
+If you used a branch because "this work is not ready", you probably want a work context. If you used a branch because "only maintainers/security should see this", you probably want a realm.
+
+## Publication Changes Realm Visibility
+
+Work does not automatically appear in a realm just because files changed. It appears when someone publishes it:
+
+```sh
+glyph publish auth-fix --to public --mode squash --json
+glyph publish embargoed-fix --to maintainers --mode preserve --json
+```
+
+That makes publication an auditable visibility change.
+
+## Why This Is Better For Open Source
+
+"Open source" does not have to mean every byte, every draft, and every security fix is public at every moment. A project can be publicly developed while still keeping in-flight work, embargoed fixes, or private subpackages in narrower realms until publication.
+
+Prototype 0 only implements simple local realms, but the concept is intentionally larger: future hosted Glyph can enforce realm access for humans, agents, and external mounts.

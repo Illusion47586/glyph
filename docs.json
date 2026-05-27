@@ -19,8 +19,10 @@
         "pages": [
           "docs/concepts/git-migration",
           "docs/concepts/architecture",
+          "docs/concepts/source-graph",
           "docs/concepts/realms",
           "docs/concepts/work-contexts",
+          "docs/concepts/snapshots-checkpoints",
           "docs/concepts/publications",
           "docs/concepts/git-compatibility"
         ]

@@ -7,6 +7,22 @@ description: "The local store, object graph, projections, agents, and Git export
 
 Prototype 0 is a local Go CLI backed by a `.glyph/` directory. There is no hosted Glyph service yet and no long-running daemon required. Humans and agents invoke the `glyph` CLI when they want to read, write, checkpoint, publish, visualize, or export source.
 
+## Core Concepts In One Diagram
+
+```mermaid
+flowchart TD
+  realm["Realm: who can see source?"] --> work["Work context: what is being changed?"]
+  actor["Actor: who is doing it?"] --> claim["Claim: who is active now?"]
+  claim --> work
+  work --> snapshot["Snapshot: what did it look like?"]
+  snapshot --> checkpoint["Checkpoint: why does this point matter?"]
+  checkpoint --> publication["Publication: what becomes visible?"]
+  publication --> realm
+  publication --> remote["Remote sync: where is it exported?"]
+```
+
+If Git is a commit graph plus conventions, Glyph is a source graph with these concepts built in.
+
 ## Local Architecture
 
 ```mermaid
