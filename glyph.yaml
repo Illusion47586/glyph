@@ -37,6 +37,7 @@ genesis_import:
   exclude:
     - .git/**
     - .glyph/**
+    - .wrangler/**
     - node_modules/**
     - .DS_Store
     - .agent/**

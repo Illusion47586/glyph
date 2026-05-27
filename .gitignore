@@ -3,6 +3,7 @@
 # Source: glyph.yaml genesis_import rules.
 
 .glyph/**
+.wrangler/**
 node_modules/**
 .DS_Store
 .agent/**
