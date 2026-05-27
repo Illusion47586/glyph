@@ -15,6 +15,7 @@ identity:
 genesis_import:
   include:
     - glyph.yaml
+    - .gitignore
     - skills-lock.json
     - go.mod
     - go.sum

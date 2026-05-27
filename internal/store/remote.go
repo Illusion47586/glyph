@@ -139,7 +139,6 @@ func (s *Store) SyncRemoteWithOptions(name string, opts GitExportOptions) (*Remo
 	}
 	commands := [][]string{
 		{"git", "remote", "add", "origin", url},
-		{"git", "push", "-u", "origin", "main"},
 	}
 	for _, args := range commands {
 		cmd := exec.Command(args[0], args[1:]...)
@@ -148,10 +147,47 @@ func (s *Store) SyncRemoteWithOptions(name string, opts GitExportOptions) (*Remo
 			return nil, fmt.Errorf("%s failed: %w\n%s", strings.Join(args, " "), err, string(outBytes))
 		}
 	}
+	if err := attachRemoteMainParent(out); err != nil {
+		return nil, err
+	}
+	push := exec.Command("git", "push", "-u", "origin", "main")
+	push.Dir = out
+	if outBytes, err := push.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("git push -u origin main failed: %w\n%s", err, string(outBytes))
+	}
 	if err := s.AppendAudit("remote_synced", BootstrapUser, map[string]any{"remote": name, "url": url, "exported": out}); err != nil {
 		return nil, err
 	}
 	return &RemoteSyncResult{Name: name, Spec: remote["spec"], Mode: remote["mode"], URL: url, Export: export, Exported: out}, nil
+}
+
+func attachRemoteMainParent(dir string) error {
+	fetch := exec.Command("git", "fetch", "origin", "main")
+	fetch.Dir = dir
+	if out, err := fetch.CombinedOutput(); err != nil {
+		if strings.Contains(string(out), "couldn't find remote ref main") {
+			return nil
+		}
+		return fmt.Errorf("git fetch origin main failed: %w\n%s", err, string(out))
+	}
+	tree := exec.Command("git", "rev-parse", "HEAD^{tree}")
+	tree.Dir = dir
+	treeOut, err := tree.Output()
+	if err != nil {
+		return fmt.Errorf("git rev-parse HEAD^{tree}: %w", err)
+	}
+	commit := exec.Command("git", "commit-tree", strings.TrimSpace(string(treeOut)), "-p", "origin/main", "-m", "Export Glyph public projection")
+	commit.Dir = dir
+	commitOut, err := commit.Output()
+	if err != nil {
+		return fmt.Errorf("git commit-tree: %w", err)
+	}
+	reset := exec.Command("git", "reset", "--hard", strings.TrimSpace(string(commitOut)))
+	reset.Dir = dir
+	if out, err := reset.CombinedOutput(); err != nil {
+		return fmt.Errorf("git reset --hard export commit failed: %w\n%s", err, string(out))
+	}
+	return nil
 }
 
 func remoteURL(spec string) string {
