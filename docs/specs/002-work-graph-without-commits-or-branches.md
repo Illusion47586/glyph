@@ -1,4 +1,7 @@
-# Spec 002: Work Graph Without Commits Or Branches
+---
+title: "Spec 002: Work Graph Without Commits Or Branches"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

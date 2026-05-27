@@ -1,4 +1,7 @@
-# Spec 008: Review, Publication, And Conflict Resolution
+---
+title: "Spec 008: Review, Publication, And Conflict Resolution"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

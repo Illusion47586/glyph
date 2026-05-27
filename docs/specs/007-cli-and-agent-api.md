@@ -1,4 +1,7 @@
-# Spec 007: CLI And Agent API
+---
+title: "Spec 007: CLI And Agent API"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

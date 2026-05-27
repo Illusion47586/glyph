@@ -1,4 +1,7 @@
-# Prototype 0 Implementation Plan: Local Self-Hosting Glyph In Go
+---
+title: "Prototype 0 Implementation Plan: Local Self-Hosting Glyph In Go"
+description: "Glyph project documentation."
+---
 
 ## Summary
 

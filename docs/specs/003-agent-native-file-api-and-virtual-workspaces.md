@@ -1,4 +1,7 @@
-# Spec 003: Agent-Native File API And Virtual Workspaces
+---
+title: "Spec 003: Agent-Native File API And Virtual Workspaces"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

@@ -1,4 +1,7 @@
-# Spec 010: External Mount Lifecycle
+---
+title: "Spec 010: External Mount Lifecycle"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

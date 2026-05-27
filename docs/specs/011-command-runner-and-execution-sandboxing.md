@@ -1,4 +1,7 @@
-# Spec 011: Command Runner And Execution Sandboxing
+---
+title: "Spec 011: Command Runner And Execution Sandboxing"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

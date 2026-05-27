@@ -1,4 +1,7 @@
-# Spec 005: Policy Language And Threat Model
+---
+title: "Spec 005: Policy Language And Threat Model"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

@@ -1,4 +1,7 @@
-# Spec 009: Identity, Trust, Credentials, And Signing
+---
+title: "Spec 009: Identity, Trust, Credentials, And Signing"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

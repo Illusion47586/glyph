@@ -1,4 +1,7 @@
-# Spec 013: Concurrency And Multi-Agent Workspaces
+---
+title: "Spec 013: Concurrency And Multi-Agent Workspaces"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

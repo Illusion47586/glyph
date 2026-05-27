@@ -1,4 +1,7 @@
-# Spec 006: Git Import/Export Compatibility
+---
+title: "Spec 006: Git Import/Export Compatibility"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

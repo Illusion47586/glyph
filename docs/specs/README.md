@@ -1,4 +1,7 @@
-# Glyph Specs
+---
+title: "Glyph Specs"
+description: "Index of Glyph design specifications."
+---
 
 Glyph is an agent-native source control system built around permissioned source graphs, continuous work capture, and programmable projections.
 

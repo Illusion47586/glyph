@@ -1,4 +1,7 @@
-# Spec 015: Local Mesh Visualizer
+---
+title: "Spec 015: Local Mesh Visualizer"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

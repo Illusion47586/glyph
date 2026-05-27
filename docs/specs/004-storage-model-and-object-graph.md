@@ -1,4 +1,7 @@
-# Spec 004: Storage Model And Object Graph
+---
+title: "Spec 004: Storage Model And Object Graph"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

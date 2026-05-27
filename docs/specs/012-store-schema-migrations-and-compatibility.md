@@ -1,4 +1,7 @@
-# Spec 012: Store Schema, Migrations, And Compatibility
+---
+title: "Spec 012: Store Schema, Migrations, And Compatibility"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27

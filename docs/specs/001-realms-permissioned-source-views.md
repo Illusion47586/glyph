@@ -1,4 +1,7 @@
-# Spec 001: Realms as Permissioned Source Views
+---
+title: "Spec 001: Realms as Permissioned Source Views"
+description: "Glyph design specification."
+---
 
 Status: Draft
 Date: 2026-05-27
