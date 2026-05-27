@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "Glyph",
   "description": "Agent-native source control built around permissioned source graphs.",
-  "theme": "mint",
+  "theme": "almond",
   "colors": {
     "primary": "#2f6fed",
     "light": "#2f6fed",
