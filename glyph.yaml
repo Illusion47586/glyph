@@ -1,0 +1,45 @@
+project:
+  name: glyph
+  status: bootstrap
+
+specs:
+  directory: docs/specs
+
+realms:
+  default_public: public
+  default_private: maintainers
+
+identity:
+  bootstrap_user: user:self:dhruv
+
+genesis_import:
+  include:
+    - glyph.yaml
+    - skills-lock.json
+    - go.mod
+    - go.sum
+    - .agents/skills/glyph/SKILL.md
+    - cmd/**
+    - internal/**
+    - docs/specs/**
+    - docs/plans/**
+    - docs/decisions/**
+    - docs/notes/**
+  exclude:
+    - .git/**
+    - .glyph/**
+    - node_modules/**
+    - .DS_Store
+    - .agent/**
+  transcripts:
+    default: exclude
+    note: Assistant conversation transcripts may be imported later as optional provenance.
+
+defaults:
+  export:
+    git:
+      gitignore: generated
+      gitinclude: generated
+  viz:
+    export:
+      out: .glyph/visualizer

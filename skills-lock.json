@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "go": {
+      "source": "mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "go/SKILL.md",
+      "computedHash": "5f4c5393a6b612ea79524c7e77184bdfb0ca8007cdbc0ca8c73c59d20dff3adf"
+    },
+    "golang-architect": {
+      "source": "tomlord1122/tomtom-skill",
+      "sourceType": "github",
+      "skillPath": "skills/golang-architect/SKILL.md",
+      "computedHash": "3cfb9950e480a799bf64e9a312035c1d878afcbe6f42f92185ede5d0b41a2552"
+    },
+    "golang-spf13-cobra": {
+      "source": "samber/cc-skills-golang",
+      "sourceType": "github",
+      "skillPath": "skills/golang-spf13-cobra/SKILL.md",
+      "computedHash": "0642d6df8e2aa05c964b71fbffc6ed4a534ded619ae16720d62a8a4c2755f333"
+    }
+  }
+}
