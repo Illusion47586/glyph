@@ -21,6 +21,8 @@
       {
         "group": "Core Model",
         "pages": [
+          "docs/concepts/git-migration",
+          "docs/concepts/architecture",
           "docs/concepts/realms",
           "docs/concepts/work-contexts",
           "docs/concepts/publications",

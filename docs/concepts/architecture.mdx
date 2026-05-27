@@ -1,0 +1,115 @@
+---
+title: "How Glyph Works"
+description: "The local store, object graph, projections, agents, and Git export path."
+---
+
+# How Glyph Works
+
+Prototype 0 is a local Go CLI backed by a `.glyph/` directory. There is no hosted Glyph service yet and no long-running daemon required. Humans and agents invoke the `glyph` CLI when they want to read, write, checkpoint, publish, visualize, or export source.
+
+## Local Architecture
+
+```mermaid
+flowchart TD
+  cli["glyph CLI"] --> store[".glyph/store.db"]
+  cli --> content[".glyph/content/"]
+  cli --> workspaces[".glyph/workspaces/"]
+  cli --> hooks[".glyph/hooks/"]
+  cli --> exports[".glyph/exports/"]
+
+  store --> graph["source graph metadata"]
+  store --> realms["realms"]
+  store --> work["work contexts"]
+  store --> snapshots["snapshots"]
+  store --> publications["publications"]
+  store --> claims["claims and conflicts"]
+
+  content --> blobs["deduplicated file bytes"]
+  exports --> git["clean Git repository"]
+  git --> github["GitHub remote"]
+```
+
+`store.db` stores graph structure and metadata. `.glyph/content/` stores file bytes by content identity so repeated file states can share physical storage. The system stores full file states logically, but deduplicates bytes physically.
+
+## What Lives Where
+
+| Path | Role |
+| --- | --- |
+| `.glyph/store.db` | SQLite database for graph metadata, realms, work contexts, snapshots, claims, publications, remotes, and mounts. |
+| `.glyph/content/` | Content-addressed file bytes. |
+| `.glyph/workspaces/` | Materialized workspace projections for active work. |
+| `.glyph/hooks/` | Local executable hooks. |
+| `.glyph/exports/` | Generated compatibility exports, such as clean Git repositories. |
+| `glyph.yaml` | Project policy and defaults for imports, exports, and visualizer output. |
+
+## Read And Write Path
+
+```mermaid
+sequenceDiagram
+  participant Agent
+  participant CLI as glyph CLI
+  participant DB as .glyph/store.db
+  participant Content as .glyph/content
+  participant Workspace as workspace projection
+
+  Agent->>CLI: glyph work claim docs --actor agent:codex:docs --json
+  CLI->>DB: record or refresh claim
+  Agent->>CLI: glyph read docs README.md --json
+  CLI->>DB: resolve work context and source object
+  CLI->>Content: load file bytes
+  CLI-->>Agent: JSON content
+  Agent->>CLI: glyph write docs README.md --reason "update docs" --json
+  CLI->>Content: store bytes if new
+  CLI->>DB: update source graph and provenance
+  CLI->>Workspace: update projection when materialized
+```
+
+The CLI is the control point. An agent does not need shell access to Git internals; it can use `glyph read` and `glyph write` as the source-control API.
+
+## Publication Path
+
+```mermaid
+sequenceDiagram
+  participant UserOrAgent as User or agent
+  participant CLI as glyph CLI
+  participant Hooks as .glyph/hooks
+  participant DB as .glyph/store.db
+  participant Export as Git export
+  participant GitHub
+
+  UserOrAgent->>CLI: glyph work conflicts docs --json
+  CLI->>DB: compare active work contexts
+  UserOrAgent->>CLI: glyph hook run pre-publish --work docs --json
+  CLI->>Hooks: execute local hook if installed
+  UserOrAgent->>CLI: glyph publish docs --to public --mode squash --json
+  CLI->>DB: create publication into public realm
+  UserOrAgent->>CLI: glyph remote sync origin --json
+  CLI->>Export: materialize public realm as Git repo
+  Export->>GitHub: push main
+```
+
+Publication changes a realm. Remote sync exports that realm to GitHub. Those are separate steps so Glyph can keep richer local semantics while still using GitHub infrastructure.
+
+## Does The Agent Run Glyph On Its Own?
+
+Glyph does not autonomously decide to run. Something invokes it:
+
+- a human in a terminal
+- a coding agent following project instructions
+- a script or CI job
+- a future hosted Glyph service
+
+In prototype 0, the recommended agent integration is simple: give the agent a skill or instruction document that says to use `glyph --json`, claim work before editing, checkpoint progress, check conflicts, publish intentionally, and sync remotes only when asked.
+
+```mermaid
+flowchart LR
+  human["Human asks for work"] --> agent["Coding agent"]
+  agent --> instructions["Glyph skill / project instructions"]
+  instructions --> cli["glyph CLI commands"]
+  cli --> store[".glyph local store"]
+  cli --> result["JSON result"]
+  result --> agent
+  agent --> human
+```
+
+This keeps the integration portable across Codex, Claude Code, Cursor, and other agents. A future MCP server or hosted API can provide richer integration, but the CLI is enough to dogfood the model today.

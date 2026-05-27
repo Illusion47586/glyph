@@ -7,6 +7,8 @@ description: "How Glyph maps to Git and GitHub."
 
 Glyph is canonical. Git and GitHub are compatibility targets.
 
+Git users should read this page as a translation layer, not as a promise that every Git concept survives unchanged. Glyph keeps compatibility at the boundary while using source graph primitives internally.
+
 ## Mapping
 
 | Git | Glyph |
@@ -20,6 +22,32 @@ Glyph is canonical. Git and GitHub are compatibility targets.
 | tag | named source graph reference or release marker |
 | remote | Glyph remote origin |
 
+## Branches Become Work Contexts Or Realms
+
+In Git, a branch is often used for two different jobs: isolating active work and naming a shared line of history. Glyph splits those jobs:
+
+- a **work context** isolates active work
+- a **realm** names a permissioned source view
+
+That means a feature branch becomes a work context, while a long-lived public or maintainer branch usually becomes a realm.
+
+```mermaid
+flowchart LR
+  gitBranch["Git feature branch"] --> glyphWork["Glyph work context"]
+  gitMain["Git main branch"] --> publicRealm["public realm"]
+  gitPrivate["Private branch"] --> maintainerRealm["maintainers realm"]
+```
+
+## Commits Become Snapshots, Checkpoints, Or Publications
+
+Git commits are overloaded. They can mean "I saved progress", "this is ready for review", "this is public", or "CI needed a point in history." Glyph separates those meanings:
+
+- **snapshot:** captured source state
+- **checkpoint:** explicit milestone inside work
+- **publication:** intentional movement into a realm
+
+Export can turn a publication into a Git commit so GitHub still sees normal Git history.
+
 ## Export
 
 The current prototype exports the `public` realm to a clean Git repository and can push that export to GitHub.
@@ -30,3 +58,16 @@ glyph remote sync origin --json
 ```
 
 Generated `.gitignore` and `.gitinclude` files come from `glyph.yaml` defaults.
+
+## GitHub Is Infrastructure
+
+When Glyph pushes to GitHub, it is publishing a compatibility projection. The canonical source graph remains local in `.glyph/` for prototype 0.
+
+```mermaid
+flowchart LR
+  glyph[".glyph source graph"] --> realm["public realm"]
+  realm --> export["clean Git export"]
+  export --> github["GitHub repository"]
+```
+
+This lets a project use GitHub for visibility, hosting, CI, and collaboration while still experimenting with a source-control model designed for agents.

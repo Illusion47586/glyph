@@ -7,6 +7,22 @@ description: "How coding agents should use Glyph safely and predictably."
 
 Agents can use Glyph through the CLI without an MCP server. The rules are simple: use `--json`, claim work before writing, checkpoint meaningful progress, publish intentionally, and prune projections after publication.
 
+## Who Runs Glyph?
+
+Glyph is not an autonomous background process in prototype 0. The agent runs it when its project instructions, skill document, or human request tells it to. A human can run the same commands in a terminal.
+
+```mermaid
+flowchart LR
+  request["Human request"] --> agent["Coding agent"]
+  agent --> skill["Glyph instructions"]
+  skill --> commands["glyph CLI commands"]
+  commands --> json["JSON responses"]
+  json --> agent
+  agent --> response["Human-facing update"]
+```
+
+This is deliberate. The CLI keeps the integration portable across Codex, Claude Code, Cursor, and future agents. A hosted service or MCP server can come later without changing the core source graph model.
+
 ## Identity
 
 Use stable actor identifiers in claim commands:
@@ -37,6 +53,8 @@ glyph work release auth-fix --actor agent:codex:auth-fix --json
 glyph work prune auth-fix --json
 ```
 
+The loop is explicit because agents should not silently publish or sync remote state. They can freely read, write, diff, and checkpoint inside a work context, but publication and GitHub sync should be intentional workflow steps.
+
 ## Concurrency
 
 `glyph work claim` is the coordination point for multi-agent work. An exclusive claim says one actor is actively mutating the work context. A heartbeat extends the claim while long tasks continue.
@@ -63,6 +81,12 @@ glyph write docs-update docs/overview.mdx --reason "document agent loop" --json 
 ```
 
 Always provide `--reason` for writes. That reason becomes provenance for future review and visualization.
+
+## Direct Filesystem Editing
+
+Agents can still edit files through ordinary filesystem tools when needed. Glyph does not forbid that. The cleaner agent-native path is to use `glyph read` and `glyph write` for changes that should carry source-control provenance.
+
+If an agent edits the project filesystem directly, run `glyph import . --json` to bring those changes back into the source graph according to `glyph.yaml`.
 
 ## Publication
 
