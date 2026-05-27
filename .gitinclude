@@ -4,6 +4,7 @@
 
 glyph.yaml
 .gitignore
+README.md
 skills-lock.json
 go.mod
 go.sum
