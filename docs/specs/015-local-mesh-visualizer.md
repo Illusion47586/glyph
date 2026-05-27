@@ -63,6 +63,23 @@ Initial edge types:
 
 Nodes should include stable IDs, labels, type, and detail maps. Edges should include source, target, type, and optional detail maps.
 
+## Timeline Model
+
+The visualizer also exports ordered events.
+
+Initial event sources:
+
+- append-only audit JSONL events
+- work context creation and updates
+- snapshot creation
+- publication records
+- hook runs
+- remote sync records
+
+Events should include stable IDs, event type, label, timestamp, actor, detail maps, and related node IDs when they can be inferred. This lets the UI show a chronological history while still connecting each operation back to the mesh.
+
+The timeline is not a replacement for the graph. It is a way to answer "what happened when?" while the graph answers "what is connected to what?"
+
 ## CLI Surface
 
 Prototype command:
@@ -89,6 +106,8 @@ The first visualizer should be simple but useful:
 - Search by ID, label, path, actor, or realm.
 - Show graph nodes and edges.
 - Show selected node details as JSON.
+- Show an event timeline ordered by timestamp.
+- Let timeline events highlight related graph nodes.
 - Show graph summary counts.
 
 The v0 renderer can use plain HTML, CSS, and browser JavaScript. It should not require a server or external network dependencies.
@@ -119,5 +138,6 @@ This spec is successful if a prototype can:
 - Export `.glyph` graph data to `graph.json`.
 - Generate a static `index.html` viewer.
 - Include work contexts, snapshots, publications, sources, content, claims, conflicts, hooks, remotes, and mounts.
+- Include an ordered operation timeline with audit, snapshot, publication, hook, and remote events.
 - Open locally without a server.
 - Let agents consume the same `graph.json`.

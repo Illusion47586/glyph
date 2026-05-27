@@ -32,6 +32,13 @@ The graph includes:
 - remotes
 - mounts
 
+It also includes an ordered event timeline. The timeline is built from audit records and store tables, so it can show work creation, snapshots, publications, hook runs, and remote syncs as a chronological stream.
+
+Selecting an event in the timeline shows the event JSON and highlights related nodes in the mesh when Glyph can infer them. This gives humans and agents two complementary views:
+
+- the mesh shows relationships
+- the timeline shows what happened when
+
 ## Output Directory
 
 Use `--out` to choose a destination:

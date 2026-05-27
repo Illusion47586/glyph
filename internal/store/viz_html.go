@@ -8,7 +8,7 @@ const visualizerHTML = `<!doctype html>
 <title>Glyph Mesh Visualizer</title>
 <style>
 body{margin:0;font:14px system-ui,-apple-system,Segoe UI,sans-serif;background:#101216;color:#eceff4}
-.app{display:grid;grid-template-columns:260px 1fr 360px;height:100vh}
+.app{display:grid;grid-template-columns:260px 1fr 380px;height:100vh}
 aside,.inspect{padding:16px;background:#171a21;overflow:auto}
 main{position:relative;overflow:hidden}
 h1,h2{font-size:16px;margin:0 0 12px}
@@ -17,45 +17,65 @@ label{display:block;margin:8px 0;color:#c9d1dc}
 .summary{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}
 .pill{padding:6px 8px;background:#252a34;border-radius:6px}
 svg{width:100%;height:100%;background:#0f1117}
-.node{cursor:pointer}
+.node{cursor:pointer;stroke:transparent;stroke-width:3}
+.node.active{stroke:#fff}
 .edge{stroke:#3d4657;stroke-width:1.2;opacity:.75}
+.edge.active{stroke:#f2cc60;stroke-width:2.4;opacity:1}
 .label{fill:#dfe6f3;font-size:11px;pointer-events:none}
 pre{white-space:pre-wrap;background:#0f1117;padding:10px;border-radius:6px;border:1px solid #303642}
 button{width:100%;padding:8px;margin:4px 0;background:#2f6fed;color:white;border:0;border-radius:6px}
 .empty{position:absolute;inset:0;display:grid;place-items:center;color:#8e98a8}
+.timeline{display:grid;gap:8px}
+.event{border:1px solid #303642;background:#11141b;border-radius:8px;padding:8px;cursor:pointer}
+.event:hover,.event.active{border-color:#f2cc60;background:#1c2029}
+.event-time{font-size:11px;color:#8e98a8}
+.event-type{font-weight:700;color:#eceff4}
+.event-meta{font-size:12px;color:#c9d1dc;margin-top:3px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.tabs button{background:#252a34}.tabs button.active{background:#2f6fed}
 </style>
 </head>
 <body>
 <div class="app">
 <aside>
 <h1>Glyph Mesh</h1>
-<input id="search" placeholder="Search mesh">
+<input id="search" placeholder="Search mesh or timeline">
 <div class="summary" id="summary"></div>
 <h2>Types</h2>
 <div id="filters"></div>
 </aside>
 <main><svg id="graph"></svg><div class="empty" id="empty">Loading graph...</div></main>
 <section class="inspect">
-<h2>Inspector</h2>
-<pre id="details">Select a node.</pre>
+<div class="tabs"><button id="tab-details" class="active">Inspector</button><button id="tab-timeline">Timeline</button></div>
+<div id="details-panel"><h2>Inspector</h2><pre id="details">Select a node or timeline event.</pre></div>
+<div id="timeline-panel" hidden><h2>Timeline</h2><div class="timeline" id="timeline"></div></div>
 </section>
 </div>
 <script>
 window.__GLYPH_GRAPH__ = __GLYPH_GRAPH_JSON__;
 const colors={store:"#f2cc60",realm:"#7cc7ff",work:"#a4f07a",snapshot:"#b39cff",publication:"#ffb86b",source:"#69dbb8",content:"#8aa1ff",claim:"#ff7eb6",conflict:"#ff5c5c",hook_run:"#d6de6a",remote:"#60d4f2",mount:"#c792ea"};
-let graph, activeTypes=new Set(), selected=null;
+let graph, activeTypes=new Set(), selectedNode=null, selectedEvent=null, nodePositions=new Map();
 loadGraph();
 function loadGraph(){
   if(window.__GLYPH_GRAPH__){init(window.__GLYPH_GRAPH__);return;}
   fetch("graph.json").then(r=>r.json()).then(init).catch(err=>{document.getElementById("empty").textContent="Could not load graph.json: "+err.message;});
 }
-function init(g){graph=g;activeTypes=new Set(g.nodes.map(n=>n.type));setup();draw();}
+function init(g){graph=g;graph.events=graph.events||[];activeTypes=new Set(g.nodes.map(n=>n.type));setup();draw();drawTimeline();}
 function setup(){
   const summary=document.getElementById("summary");
   Object.entries(graph.summary).sort().forEach(([k,v])=>{const d=document.createElement("div");d.className="pill";d.textContent=k+": "+v;summary.appendChild(d);});
+  const ev=document.createElement("div");ev.className="pill";ev.textContent="events: "+graph.events.length;summary.appendChild(ev);
   const filters=document.getElementById("filters");
   [...activeTypes].sort().forEach(t=>{const l=document.createElement("label");const c=document.createElement("input");c.type="checkbox";c.checked=true;c.style.width="auto";c.onchange=()=>{c.checked?activeTypes.add(t):activeTypes.delete(t);draw();};l.append(c," "+t);filters.appendChild(l);});
-  document.getElementById("search").oninput=draw;
+  document.getElementById("search").oninput=()=>{draw();drawTimeline();};
+  document.getElementById("tab-details").onclick=()=>showTab("details");
+  document.getElementById("tab-timeline").onclick=()=>showTab("timeline");
+}
+function showTab(name){
+  document.getElementById("details-panel").hidden=name!=="details";
+  document.getElementById("timeline-panel").hidden=name!=="timeline";
+  document.getElementById("tab-details").classList.toggle("active",name==="details");
+  document.getElementById("tab-timeline").classList.toggle("active",name==="timeline");
 }
 function draw(){
   const q=document.getElementById("search").value.toLowerCase();
@@ -63,18 +83,29 @@ function draw(){
   document.getElementById("empty").style.display=nodes.length?"none":"grid";
   if(!nodes.length){document.getElementById("empty").textContent="No matching nodes.";return;}
   const ids=new Set(nodes.map(n=>n.id));
+  const activeIDs=new Set(selectedEvent?selectedEvent.node_ids||[]:selectedNode?[selectedNode.id]:[]);
   const edges=graph.edges.filter(e=>ids.has(e.from)&&ids.has(e.to));
   const svg=document.getElementById("graph");svg.innerHTML="";
   const w=svg.clientWidth||800,h=svg.clientHeight||600,cx=w/2,cy=h/2;
-  const pos=new Map(nodes.map((n,i)=>{const a=i/nodes.length*Math.PI*2;const r=Math.min(w,h)*(.18+.32*((i%5)/5));return[n.id,{x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r}]}));
-  edges.forEach(e=>{const a=pos.get(e.from),b=pos.get(e.to);if(!a||!b)return;line(svg,a.x,a.y,b.x,b.y);});
-  nodes.forEach(n=>{const p=pos.get(n.id);circle(svg,p.x,p.y,8,colors[n.type]||"#ccc",()=>inspect(n));text(svg,p.x+11,p.y+4,n.label.slice(0,34));});
+  nodePositions=new Map(nodes.map((n,i)=>{const a=i/nodes.length*Math.PI*2;const r=Math.min(w,h)*(.18+.32*((i%5)/5));return[n.id,{x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r}]}));
+  edges.forEach(e=>{const a=nodePositions.get(e.from),b=nodePositions.get(e.to);if(!a||!b)return;line(svg,a.x,a.y,b.x,b.y,activeIDs.has(e.from)||activeIDs.has(e.to));});
+  nodes.forEach(n=>{const p=nodePositions.get(n.id);circle(svg,p.x,p.y,8,colors[n.type]||"#ccc",activeIDs.has(n.id),()=>inspectNode(n));text(svg,p.x+11,p.y+4,n.label.slice(0,34));});
 }
-function match(n,q){return !q||JSON.stringify(n).toLowerCase().includes(q);}
-function line(svg,x1,y1,x2,y2){const e=document.createElementNS("http://www.w3.org/2000/svg","line");e.setAttribute("class","edge");e.setAttribute("x1",x1);e.setAttribute("y1",y1);e.setAttribute("x2",x2);e.setAttribute("y2",y2);svg.appendChild(e);}
-function circle(svg,x,y,r,fill,click){const e=document.createElementNS("http://www.w3.org/2000/svg","circle");e.setAttribute("class","node");e.setAttribute("cx",x);e.setAttribute("cy",y);e.setAttribute("r",r);e.setAttribute("fill",fill);e.onclick=click;svg.appendChild(e);}
+function drawTimeline(){
+  const q=document.getElementById("search").value.toLowerCase();
+  const root=document.getElementById("timeline");root.innerHTML="";
+  const events=graph.events.filter(e=>match(e,q)).slice().reverse();
+  if(!events.length){root.textContent="No matching events.";return;}
+  events.forEach(e=>{const item=document.createElement("div");item.className="event"+(selectedEvent&&selectedEvent.id===e.id?" active":"");item.onclick=()=>inspectEvent(e);const time=document.createElement("div");time.className="event-time";time.textContent=e.timestamp||"unknown time";const typ=document.createElement("div");typ.className="event-type";typ.textContent=e.label||e.type;const meta=document.createElement("div");meta.className="event-meta";meta.textContent=[e.actor,workOf(e),pathOf(e)].filter(Boolean).join(" • ");item.append(time,typ,meta);root.appendChild(item);});
+}
+function inspectNode(n){selectedNode=n;selectedEvent=null;showTab("details");document.getElementById("details").textContent=JSON.stringify(n,null,2);draw();drawTimeline();}
+function inspectEvent(e){selectedEvent=e;selectedNode=null;showTab("details");document.getElementById("details").textContent=JSON.stringify(e,null,2);draw();drawTimeline();}
+function match(obj,q){return !q||JSON.stringify(obj).toLowerCase().includes(q);}
+function workOf(e){return e.details&&(e.details.work||e.details.remote||e.details.dest_realm);}
+function pathOf(e){return e.details&&(e.details.path||e.details.included_count&&("included "+e.details.included_count+" files"));}
+function line(svg,x1,y1,x2,y2,active){const e=document.createElementNS("http://www.w3.org/2000/svg","line");e.setAttribute("class","edge"+(active?" active":""));e.setAttribute("x1",x1);e.setAttribute("y1",y1);e.setAttribute("x2",x2);e.setAttribute("y2",y2);svg.appendChild(e);}
+function circle(svg,x,y,r,fill,active,click){const e=document.createElementNS("http://www.w3.org/2000/svg","circle");e.setAttribute("class","node"+(active?" active":""));e.setAttribute("cx",x);e.setAttribute("cy",y);e.setAttribute("r",r);e.setAttribute("fill",fill);e.onclick=click;svg.appendChild(e);}
 function text(svg,x,y,s){const e=document.createElementNS("http://www.w3.org/2000/svg","text");e.setAttribute("class","label");e.setAttribute("x",x);e.setAttribute("y",y);e.textContent=s;svg.appendChild(e);}
-function inspect(n){document.getElementById("details").textContent=JSON.stringify(n,null,2);}
 </script>
 </body>
 </html>

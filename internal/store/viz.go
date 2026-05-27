@@ -13,6 +13,7 @@ type Graph struct {
 	Root        string         `json:"root"`
 	Nodes       []GraphNode    `json:"nodes"`
 	Edges       []GraphEdge    `json:"edges"`
+	Events      []GraphEvent   `json:"events"`
 	Summary     map[string]int `json:"summary"`
 }
 
@@ -28,6 +29,16 @@ type GraphEdge struct {
 	To      string            `json:"to"`
 	Type    string            `json:"type"`
 	Details map[string]string `json:"details,omitempty"`
+}
+
+type GraphEvent struct {
+	ID        string            `json:"id"`
+	Type      string            `json:"type"`
+	Label     string            `json:"label"`
+	Timestamp string            `json:"timestamp"`
+	Actor     string            `json:"actor,omitempty"`
+	Details   map[string]string `json:"details,omitempty"`
+	NodeIDs   []string          `json:"node_ids,omitempty"`
 }
 
 func (s *Store) MeshGraph() (*Graph, error) {
@@ -60,6 +71,9 @@ func (s *Store) MeshGraph() (*Graph, error) {
 	if err := s.addRemoteMountGraph(g); err != nil {
 		return nil, err
 	}
+	if err := s.addTimeline(g); err != nil {
+		return nil, err
+	}
 	g.sort()
 	return g, nil
 }
@@ -73,6 +87,18 @@ func (g *Graph) addEdge(from, to, typ string, details map[string]string) {
 	g.Edges = append(g.Edges, GraphEdge{From: from, To: to, Type: typ, Details: details})
 }
 
+func (g *Graph) addEvent(id, typ, label, timestamp, actor string, details map[string]string, nodeIDs []string) {
+	g.Events = append(g.Events, GraphEvent{
+		ID:        id,
+		Type:      typ,
+		Label:     label,
+		Timestamp: timestamp,
+		Actor:     actor,
+		Details:   details,
+		NodeIDs:   uniqueEventStrings(nodeIDs),
+	})
+}
+
 func (g *Graph) sort() {
 	sort.Slice(g.Nodes, func(i, j int) bool { return g.Nodes[i].ID < g.Nodes[j].ID })
 	sort.Slice(g.Edges, func(i, j int) bool {
@@ -83,6 +109,12 @@ func (g *Graph) sort() {
 			return g.Edges[i].To < g.Edges[j].To
 		}
 		return g.Edges[i].From < g.Edges[j].From
+	})
+	sort.SliceStable(g.Events, func(i, j int) bool {
+		if g.Events[i].Timestamp == g.Events[j].Timestamp {
+			return g.Events[i].ID < g.Events[j].ID
+		}
+		return g.Events[i].Timestamp < g.Events[j].Timestamp
 	})
 }
 

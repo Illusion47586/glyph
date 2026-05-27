@@ -49,6 +49,7 @@ func vizExportCmd() *cobra.Command {
 				"graph":      filepath.Join(out, "graph.json"),
 				"nodes":      len(graph.Nodes),
 				"edges":      len(graph.Edges),
+				"events":     len(graph.Events),
 				"summary":    graph.Summary,
 				"generated":  graph.GeneratedAt,
 				"store_root": graph.Root,
