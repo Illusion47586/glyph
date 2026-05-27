@@ -3,8 +3,6 @@ title: "Snapshots And Checkpoints"
 description: "How Glyph records progress without forcing every save to become a commit."
 ---
 
-# Snapshots And Checkpoints
-
 Git uses commits for many jobs. A commit can mean "save my work", "make CI run", "tell reviewers this is ready", "publish this change", or "record a release." That overload is one reason Git feels natural after years of use but strange to automate cleanly.
 
 Glyph splits these meanings apart.
