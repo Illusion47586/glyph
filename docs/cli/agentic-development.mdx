@@ -31,7 +31,7 @@ An agent's real process is different:
 8. Prepare a final explanation.
 9. Ask whether publication or deployment is allowed.
 
-Git has commits and branches, but it does not know which intermediate states are agent scratch work, which states are meaningful checkpoints, which actor currently owns the work, or which source view is safe to publish.
+Git has commits and branches, but it does not know which intermediate states are scratch work, which states are meaningful checkpoints, which actor currently owns the task, or which source view is safe to publish.
 
 Glyph separates those ideas.
 
@@ -237,7 +237,7 @@ glyph work depend api-fix data-model --json
 
 ## Git Is Still Useful
 
-Glyph does not reject Git. It changes Git's role.
+Glyph does not reject Git. It changes Git's job.
 
 | Git role | Glyph view |
 | --- | --- |
@@ -249,9 +249,9 @@ Glyph does not reject Git. It changes Git's role.
 
 This is why `remote sync` creates a clean Git export. GitHub gets normal commits. Glyph keeps the richer local source graph.
 
-## Recommended Agent Policy
+## Recommended Agent Loop
 
-Agents working in a Glyph project should follow these rules:
+For command-by-command flows, use [Workflow Reference](/docs/cli/workflow-reference). The short policy is:
 
 1. Start with `glyph status --json`.
 2. Use an explicit work context for changes.

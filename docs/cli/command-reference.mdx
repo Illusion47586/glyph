@@ -10,6 +10,7 @@ All commands support `--json` as a global flag. JSON mode is the preferred inter
 | Command | Purpose | Arguments | Flags |
 | --- | --- | --- | --- |
 | `glyph install` | Copy the running binary into the user bin directory and add that directory to PATH for new terminals. | None | `--bin-dir` |
+| `glyph version` | Print build version, commit, and build date. | None | None |
 | `glyph check <realm>` | Materialize a realm export and run configured export checks. | `realm` | `--check`, `--keep`, `--out` |
 | `glyph init` | Initialize `.glyph/` in the current project. | None | None |
 | `glyph import <path>` | Import files from a workspace path into the public source graph. | `path`: directory to import | None |
@@ -18,6 +19,7 @@ All commands support `--json` as a global flag. JSON mode is the preferred inter
 
 ```sh
 glyph install --json
+glyph version --json
 glyph check public --json
 glyph init --json
 glyph import . --json

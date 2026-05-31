@@ -5,6 +5,8 @@ description: "Run the Glyph prototype locally."
 
 Glyph is currently a Go CLI prototype.
 
+The public GitHub mirror is [Illusion47586/glyph](https://github.com/Illusion47586/glyph). In this repository, GitHub is the export target; `.glyph/` is the local source-control store.
+
 ```sh
 go test ./...
 go run ./cmd/glyph init --json
@@ -33,9 +35,12 @@ glyph import . --json
 glyph work start docs-update --from public --json
 glyph write docs-update README.md --reason "update readme" --json < README.md
 glyph diff docs-update --json
+glyph checkpoint docs-update --message "readme ready" --json
 glyph publish docs-update --to public --mode squash --json
 glyph work prune docs-update --json
 ```
+
+That loop is the first important difference from Git. A branch normally has to stand in for "task", "scratch space", "review candidate", and sometimes "visibility boundary." Glyph separates those steps: work happens in a work context, progress can be checkpointed, and publication is the explicit moment a realm changes.
 
 ## Inspect The Mesh
 
@@ -71,4 +76,4 @@ go run ./cmd/glyph remote sync origin --json
 
 Do not run `git init` in this project root while dogfooding Glyph. GitHub is an export target; `.glyph/` is the local source-control store.
 
-For the full CLI surface, see [Command Reference](/docs/cli/command-reference).
+For complete flows, see [Workflow Reference](/docs/cli/workflow-reference). For the full CLI surface, see [Command Reference](/docs/cli/command-reference).

@@ -49,6 +49,28 @@ glyph publish auth-fix --to public --mode preserve
 
 In both modes, detailed Glyph history can remain privately retained according to policy.
 
+## Semantic Export Metadata
+
+If the destination will sync to GitHub, publication can carry semantic metadata for the exported Git commit:
+
+```sh
+glyph publish docs-update \
+  --to public \
+  --mode squash \
+  --semantic-type docs \
+  --semantic-scope cli \
+  --semantic-description "refresh workflow documentation" \
+  --json
+```
+
+The Git mirror receives a readable subject:
+
+```text
+docs(cli): refresh workflow documentation
+```
+
+Glyph stores the metadata with the publication and exports it as trailers in the Git commit body. That gives GitHub users familiar Conventional Commit-style history without turning Git commits back into the canonical model.
+
 ## Review Before Publication
 
 Publication is the right time to run conflict checks and hooks:

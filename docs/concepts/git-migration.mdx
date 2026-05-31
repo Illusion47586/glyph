@@ -5,6 +5,8 @@ description: "How Git workflows translate into Glyph workflows."
 
 Glyph does not try to make branches and commits friendlier. It replaces them with primitives that better match how humans and agents actually work: source views, work contexts, snapshots, and publications.
 
+The result still exports cleanly to GitHub. For this project, the public mirror is [Illusion47586/glyph](https://github.com/Illusion47586/glyph).
+
 ## Mental Model Shift
 
 | In Git | In Glyph | Why it changes |
@@ -29,7 +31,7 @@ flowchart LR
   main --> push["push to GitHub"]
 ```
 
-Git asks you to choose history shape while you are still discovering the work. That is tolerable for humans and clumsy for agents. Agents often need to try edits, checkpoint partial progress, coordinate with other agents, and only later decide what should become visible.
+Git asks you to choose history shape while you are still discovering the work. That is tolerable for humans and clumsy for agents. Agents often need to try edits, checkpoint partial progress, coordinate with other agents, and only later decide what should become visible. Glyph moves that decision to publication time.
 
 ## Glyph Flow
 
@@ -148,3 +150,5 @@ Glyph gives them:
 - GitHub export without making GitHub the canonical model
 
 The result is less ceremony during exploration and more control at the moment work becomes visible.
+
+For complete command sequences, use [Workflow Reference](/docs/cli/workflow-reference).

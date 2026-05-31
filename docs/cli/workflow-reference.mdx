@@ -5,6 +5,24 @@ description: "End-to-end Glyph workflows for humans, agents, publication, GitHub
 
 Glyph workflows are explicit by design. A work context can collect many snapshots, but a realm changes only when someone publishes. A GitHub mirror changes only when someone syncs.
 
+The public mirror for this repository is [Illusion47586/glyph](https://github.com/Illusion47586/glyph). Treat it as the Git-compatible projection of the `public` realm, not as the canonical store.
+
+## Flow Map
+
+| Goal | Use this flow |
+| --- | --- |
+| Ordinary agent work | [The Standard Agent Loop](#the-standard-agent-loop) |
+| Human approval before landing | [Human Review Before Publication](#human-review-before-publication) |
+| Two or more agents coordinating | [Multiple Agents On Related Work](#multiple-agents-on-related-work) |
+| Docs-only updates | [Documentation-Only Work](#documentation-only-work) |
+| CLI changes and release binaries | [Release Binary Workflow](#release-binary-workflow) |
+| Validate what GitHub will see | [Public Projection Validation](#public-projection-validation) |
+| Push the public mirror | [GitHub Mirror Workflow](#github-mirror-workflow) |
+| Experiment without publishing | [Local Exploration Without Publication](#local-exploration-without-publication) |
+| Fix broken CI or export state | [Emergency Fix Workflow](#emergency-fix-workflow) |
+| Keep work outside the public mirror | [Maintainer-Only Work](#maintainer-only-work) |
+| Deploy these docs | [Deployment Workflow For This Docs Site](#deployment-workflow-for-this-docs-site) |
+
 ## The Standard Agent Loop
 
 Use this when an agent is doing ordinary source work.
@@ -22,7 +40,11 @@ glyph checkpoint task-name --message "meaningful milestone" --json
 glyph work conflicts task-name --json
 glyph check public --json
 
-glyph publish task-name --to public --mode squash --json
+glyph publish task-name --to public --mode squash \
+  --semantic-type feat \
+  --semantic-scope area \
+  --semantic-description "describe the published change" \
+  --json
 glyph work release task-name --actor agent:codex:task-name --json
 glyph work prune task-name --json
 glyph remote sync origin --json
@@ -35,6 +57,8 @@ Why this works well for agents:
 - Checkpoints preserve progress without turning every step into public history.
 - Publication is a clear visibility transition.
 - Remote sync validates the public projection before GitHub receives it.
+
+Git can approximate pieces of this with branches, stashes, worktrees, and commit conventions. The weak spot is that those pieces rely on human convention. Glyph puts task identity, active ownership, checkpoints, publication, and Git export into the source-control model itself.
 
 ## Human Review Before Publication
 
@@ -95,7 +119,11 @@ glyph write docs-topic docs/cli/workflow-reference.mdx --reason "add workflow re
 glyph write docs-topic docs.json --reason "add docs page to navigation" --json < docs.json
 glyph diff docs-topic --json
 glyph checkpoint docs-topic --message "docs ready" --json
-glyph publish docs-topic --to public --mode squash --json
+glyph publish docs-topic --to public --mode squash \
+  --semantic-type docs \
+  --semantic-scope cli \
+  --semantic-description "refresh workflow documentation" \
+  --json
 glyph work prune docs-topic --json
 glyph remote sync origin --json
 ```
@@ -176,6 +204,14 @@ glyph remote sync origin --json
 2. Materializes the `public` realm.
 3. Creates a clean Git repository from that projection.
 4. Pushes the generated Git commit to the configured remote.
+
+When the publication includes semantic metadata, the generated Git commit uses a Conventional Commit-style subject, such as:
+
+```text
+docs(cli): refresh workflow documentation
+```
+
+The same metadata is preserved as Glyph trailers in the commit body, so GitHub history stays readable without making Git commits the source of truth.
 
 Use `--skip-checks` sparingly:
 

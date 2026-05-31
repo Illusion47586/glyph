@@ -1,0 +1,53 @@
+---
+title: "Project Status"
+description: "What exists today and what is still planned."
+---
+
+Glyph is early. The specs are intentionally ahead of the implementation.
+
+## Suitable Today
+
+- experimenting with agent-native source-control workflows
+- dogfooding work contexts, claims, checkpoints, and publications
+- exporting the public realm to GitHub
+- visualizing the local source graph
+- refining the specs and implementation model
+
+## Not Yet Suitable For
+
+- production replacement of Git for critical repositories
+- hosted multi-user collaboration
+- full Git import and pull request round-tripping
+- policy-backed access control enforcement
+- signed remote synchronization
+
+## Implemented In Prototype
+
+- Go CLI using Cobra
+- SQLite-backed `.glyph/store.db`
+- content-addressed blob storage in `.glyph/content/`
+- realms: `public` and `maintainers`
+- work contexts
+- snapshots and checkpoints
+- publication into `public`
+- concurrency claims, dependencies, and conflict detection
+- local hooks for publish events
+- Git export
+- export-only GitHub remote sync
+- public export checks before remote sync
+- semantic publication metadata for exported Git commits
+- standalone release binaries through GitHub Actions
+- user-local CLI installation with PATH guidance
+- generated `.gitignore` and `.gitinclude`
+- local mesh visualizer
+
+## Planned
+
+- Git import
+- GitHub pull request export/import
+- richer preserve-history export
+- external mounts
+- policy language enforcement
+- hosted Glyph service
+- stronger command sandboxing
+- semantic conflict resolution

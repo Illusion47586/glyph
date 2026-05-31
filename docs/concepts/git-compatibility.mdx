@@ -7,6 +7,8 @@ Glyph is canonical. Git and GitHub are compatibility targets.
 
 Git users should read this page as a translation layer, not as a promise that every Git concept survives unchanged. Glyph keeps compatibility at the boundary while using source graph primitives internally.
 
+The public mirror for this project is [Illusion47586/glyph](https://github.com/Illusion47586/glyph). It is the exported `public` realm, so GitHub users see ordinary files, commits, releases, and Actions runs while Glyph keeps the richer local model.
+
 ## Mapping
 
 | Git | Glyph |
@@ -68,4 +70,6 @@ flowchart LR
   export --> github["GitHub repository"]
 ```
 
-This lets a project use GitHub for visibility, hosting, CI, and collaboration while still experimenting with a source-control model designed for agents.
+This lets a project use GitHub for visibility, hosting, CI, and releases while still using a source-control model designed for agents.
+
+Git's weak spot here is not that it lacks power. It is that power comes from conventions layered on top: branch naming, commit discipline, protected branches, PR rules, and CI rituals. Glyph keeps the useful boundary output, then gives the inner workflow explicit concepts for work, visibility, and publication.

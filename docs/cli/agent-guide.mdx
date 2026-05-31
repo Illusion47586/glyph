@@ -5,6 +5,8 @@ description: "How coding agents should use Glyph safely and predictably."
 
 Agents can use Glyph through the CLI without an MCP server. The rules are simple: use `--json`, claim work before writing, checkpoint meaningful progress, publish intentionally, and prune projections after publication.
 
+For full end-to-end command flows, see [Workflow Reference](/docs/cli/workflow-reference). This page focuses on agent behavior and safety.
+
 ## Who Runs Glyph?
 
 Glyph is not an autonomous background process in prototype 0. The agent runs it when its project instructions, skill document, or human request tells it to. A human can run the same commands in a terminal.
@@ -52,6 +54,8 @@ glyph work prune auth-fix --json
 ```
 
 The loop is explicit because agents should not silently publish or sync remote state. They can freely read, write, diff, and checkpoint inside a work context, but publication and GitHub sync should be intentional workflow steps.
+
+Git usually leaves this distinction to convention: a branch may be scratch work, review work, or public-ready work depending on team habits. Glyph gives agents concrete commands for each state so they can act predictably.
 
 ## Concurrency
 
