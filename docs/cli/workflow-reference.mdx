@@ -14,6 +14,7 @@ The public mirror for this repository is [Illusion47586/glyph](https://github.co
 | Ordinary agent work | [The Standard Agent Loop](#the-standard-agent-loop) |
 | Human approval before landing | [Human Review Before Publication](#human-review-before-publication) |
 | Two or more agents coordinating | [Multiple Agents On Related Work](#multiple-agents-on-related-work) |
+| Same project on another device | [Cross-Device Handoff](#cross-device-handoff) |
 | Docs-only updates | [Documentation-Only Work](#documentation-only-work) |
 | CLI changes and release binaries | [Release Binary Workflow](#release-binary-workflow) |
 | Validate what GitHub will see | [Public Projection Validation](#public-projection-validation) |
@@ -108,6 +109,35 @@ glyph remote sync origin --json
 ```
 
 Git branches can represent this, but they do not explain agent ownership, heartbeat state, or dependency intent as directly.
+
+For the deeper model, including same-workspace review and device sharing, see [Collaboration And Devices](/docs/concepts/collaboration).
+
+## Cross-Device Handoff
+
+Use GitHub when another device only needs the public project:
+
+```sh
+glyph check public --json
+glyph remote sync origin --json
+git clone git@github.com:Illusion47586/glyph.git
+```
+
+On the second device, bootstrap Glyph from that public projection:
+
+```sh
+cd glyph
+glyph init --json
+glyph import . --json
+glyph work start next-task --from public --json
+```
+
+This shares the public source, not private snapshots or unpublished work contexts. To move the full local Glyph graph in prototype 0, copy the project including `.glyph/` while nothing is writing to it:
+
+```sh
+rsync -a --delete ./ other-device:/path/to/glyph/
+```
+
+Treat that as an offline handoff. Do not let two devices write to the same cloud-synced `.glyph/store.db` at the same time.
 
 ## Documentation-Only Work
 
