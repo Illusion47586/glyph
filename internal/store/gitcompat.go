@@ -21,6 +21,7 @@ type GitExportOptions struct {
 type GitExportResult struct {
 	Realm      string   `json:"realm"`
 	Out        string   `json:"out"`
+	GitCommit  string   `json:"git_commit,omitempty"`
 	Generated  []string `json:"generated,omitempty"`
 	Skipped    []string `json:"skipped,omitempty"`
 	Gitignore  string   `json:"gitignore"`

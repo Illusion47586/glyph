@@ -170,6 +170,13 @@ func TestExportGitGeneratesCompatibilityFiles(t *testing.T) {
 	if _, err := st.ImportWorkspace(); err != nil {
 		t.Fatalf("import: %v", err)
 	}
+	if _, err := st.StartWork("release-notes", "public"); err != nil {
+		t.Fatalf("start work: %v", err)
+	}
+	publicationID, err := st.PublishWithMode("release-notes", "public", "squash")
+	if err != nil {
+		t.Fatalf("publish: %v", err)
+	}
 	out := filepath.Join(root, "export")
 	result, err := st.ExportGitWithOptions("public", out, GitExportOptions{Gitignore: GitCompatGenerated, Gitinclude: GitCompatGenerated})
 	if err != nil {
@@ -180,6 +187,27 @@ func TestExportGitGeneratesCompatibilityFiles(t *testing.T) {
 	}
 	if len(result.Generated) != 2 {
 		t.Fatalf("generated = %#v, want .gitignore and .gitinclude", result.Generated)
+	}
+	if result.GitCommit == "" {
+		t.Fatalf("git commit was not reported")
+	}
+	log := gitOutput(t, out, "log", "-1", "--format=%B")
+	for _, want := range []string{
+		"Publish release-notes to public",
+		"Glyph-Publication: " + publicationID,
+		"Glyph-Work: release-notes",
+		"Glyph-Realm: public",
+		"Glyph-Mode: squash",
+	} {
+		if !strings.Contains(log, want) {
+			t.Fatalf("git log missing %q:\n%s", want, log)
+		}
+	}
+	audit := read(t, filepath.Join(st.Dir, "audit", "events.jsonl"))
+	for _, want := range []string{`"git_exported"`, `"git_commit":"` + result.GitCommit + `"`, `"publication":"` + publicationID + `"`} {
+		if !strings.Contains(audit, want) {
+			t.Fatalf("audit log missing %q:\n%s", want, audit)
+		}
 	}
 	gitignore := read(t, filepath.Join(out, ".gitignore"))
 	for _, want := range []string{".glyph/**", "node_modules/**"} {
@@ -196,6 +224,17 @@ func TestExportGitGeneratesCompatibilityFiles(t *testing.T) {
 			t.Fatalf(".gitinclude missing %q:\n%s", want, gitinclude)
 		}
 	}
+}
+
+func gitOutput(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, string(out))
+	}
+	return string(out)
 }
 
 func newTestStore(t *testing.T) (string, *Store) {

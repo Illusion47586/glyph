@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
@@ -11,12 +12,21 @@ import (
 )
 
 type RemoteSyncResult struct {
-	Name     string           `json:"name"`
-	Spec     string           `json:"spec"`
-	Mode     string           `json:"mode"`
-	URL      string           `json:"url"`
-	Export   *GitExportResult `json:"export"`
-	Exported string           `json:"exported"`
+	Name      string           `json:"name"`
+	Spec      string           `json:"spec"`
+	Mode      string           `json:"mode"`
+	URL       string           `json:"url"`
+	GitCommit string           `json:"git_commit,omitempty"`
+	Export    *GitExportResult `json:"export"`
+	Exported  string           `json:"exported"`
+}
+
+type exportPublication struct {
+	ID      string
+	Work    string
+	Realm   string
+	Mode    string
+	Created string
 }
 
 func (s *Store) AddRemote(name, spec, mode string) error {
@@ -80,10 +90,16 @@ func (s *Store) ExportGitWithOptions(realm, out string, opts GitExportOptions) (
 	}
 	result.Realm = realm
 	result.Out = out
+	publication, err := s.latestPublicationForRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	exportedAt := time.Now().UTC().Format(time.RFC3339)
+	subject, body := gitExportCommitMessage(realm, publication, exportedAt)
 	commands := [][]string{
 		{"git", "init", "-b", "main"},
 		{"git", "add", "."},
-		{"git", "-c", "user.name=Glyph", "-c", "user.email=glyph@example.local", "commit", "-m", "Export Glyph public projection"},
+		{"git", "-c", "user.name=Glyph", "-c", "user.email=glyph@example.local", "commit", "-m", subject, "-m", body},
 	}
 	for _, args := range commands {
 		cmd := exec.Command(args[0], args[1:]...)
@@ -92,7 +108,14 @@ func (s *Store) ExportGitWithOptions(realm, out string, opts GitExportOptions) (
 			return nil, fmt.Errorf("%s failed: %w\n%s", strings.Join(args, " "), err, string(outBytes))
 		}
 	}
-	if err := s.AppendAudit("git_exported", BootstrapUser, map[string]any{"realm": realm, "out": out, "generated": result.Generated, "skipped": result.Skipped}); err != nil {
+	commit, err := gitHead(out)
+	if err != nil {
+		return nil, err
+	}
+	result.GitCommit = commit
+	auditData := map[string]any{"realm": realm, "out": out, "git_commit": commit, "generated": result.Generated, "skipped": result.Skipped}
+	addPublicationAuditData(auditData, publication)
+	if err := s.AppendAudit("git_exported", BootstrapUser, auditData); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -133,6 +156,10 @@ func (s *Store) SyncRemoteWithOptions(name string, opts GitExportOptions) (*Remo
 	if err != nil {
 		return nil, err
 	}
+	publication, err := s.latestPublicationForRealm("public")
+	if err != nil {
+		return nil, err
+	}
 	url := remoteURL(remote["spec"])
 	if url == "" {
 		return nil, fmt.Errorf("unsupported remote spec %q", remote["spec"])
@@ -147,47 +174,53 @@ func (s *Store) SyncRemoteWithOptions(name string, opts GitExportOptions) (*Remo
 			return nil, fmt.Errorf("%s failed: %w\n%s", strings.Join(args, " "), err, string(outBytes))
 		}
 	}
-	if err := attachRemoteMainParent(out); err != nil {
+	subject, body := gitExportCommitMessage("public", publication, time.Now().UTC().Format(time.RFC3339))
+	commit, err := attachRemoteMainParent(out, subject, body)
+	if err != nil {
 		return nil, err
 	}
+	export.GitCommit = commit
 	push := exec.Command("git", "push", "-u", "origin", "main")
 	push.Dir = out
 	if outBytes, err := push.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("git push -u origin main failed: %w\n%s", err, string(outBytes))
 	}
-	if err := s.AppendAudit("remote_synced", BootstrapUser, map[string]any{"remote": name, "url": url, "exported": out}); err != nil {
+	auditData := map[string]any{"remote": name, "url": url, "exported": out, "git_commit": commit}
+	addPublicationAuditData(auditData, publication)
+	if err := s.AppendAudit("remote_synced", BootstrapUser, auditData); err != nil {
 		return nil, err
 	}
-	return &RemoteSyncResult{Name: name, Spec: remote["spec"], Mode: remote["mode"], URL: url, Export: export, Exported: out}, nil
+	return &RemoteSyncResult{Name: name, Spec: remote["spec"], Mode: remote["mode"], URL: url, GitCommit: commit, Export: export, Exported: out}, nil
 }
 
-func attachRemoteMainParent(dir string) error {
+func attachRemoteMainParent(dir, subject, body string) (string, error) {
 	fetch := exec.Command("git", "fetch", "origin", "main")
 	fetch.Dir = dir
 	if out, err := fetch.CombinedOutput(); err != nil {
 		if strings.Contains(string(out), "couldn't find remote ref main") {
-			return nil
+			return gitHead(dir)
 		}
-		return fmt.Errorf("git fetch origin main failed: %w\n%s", err, string(out))
+		return "", fmt.Errorf("git fetch origin main failed: %w\n%s", err, string(out))
 	}
 	tree := exec.Command("git", "rev-parse", "HEAD^{tree}")
 	tree.Dir = dir
 	treeOut, err := tree.Output()
 	if err != nil {
-		return fmt.Errorf("git rev-parse HEAD^{tree}: %w", err)
+		return "", fmt.Errorf("git rev-parse HEAD^{tree}: %w", err)
 	}
-	commit := exec.Command("git", "commit-tree", strings.TrimSpace(string(treeOut)), "-p", "origin/main", "-m", "Export Glyph public projection")
+	commit := exec.Command("git", "commit-tree", strings.TrimSpace(string(treeOut)), "-p", "origin/main", "-m", subject, "-m", body)
 	commit.Dir = dir
 	commitOut, err := commit.Output()
 	if err != nil {
-		return fmt.Errorf("git commit-tree: %w", err)
+		return "", fmt.Errorf("git commit-tree: %w", err)
 	}
-	reset := exec.Command("git", "reset", "--hard", strings.TrimSpace(string(commitOut)))
+	newCommit := strings.TrimSpace(string(commitOut))
+	reset := exec.Command("git", "reset", "--hard", newCommit)
 	reset.Dir = dir
 	if out, err := reset.CombinedOutput(); err != nil {
-		return fmt.Errorf("git reset --hard export commit failed: %w\n%s", err, string(out))
+		return "", fmt.Errorf("git reset --hard export commit failed: %w\n%s", err, string(out))
 	}
-	return nil
+	return newCommit, nil
 }
 
 func remoteURL(spec string) string {
@@ -198,4 +231,58 @@ func remoteURL(spec string) string {
 		return spec
 	}
 	return ""
+}
+
+func (s *Store) latestPublicationForRealm(realm string) (*exportPublication, error) {
+	row := s.DB.QueryRow(`SELECT id, work_name, dest_realm, mode, created_at FROM publications WHERE dest_realm = ? AND status = 'published' ORDER BY created_at DESC, id DESC LIMIT 1`, realm)
+	var pub exportPublication
+	if err := row.Scan(&pub.ID, &pub.Work, &pub.Realm, &pub.Mode, &pub.Created); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &pub, nil
+}
+
+func gitExportCommitMessage(realm string, pub *exportPublication, exportedAt string) (string, string) {
+	if pub == nil {
+		return fmt.Sprintf("Export Glyph %s projection", realm), strings.Join([]string{
+			"Glyph export without a matching publication record.",
+			"",
+			"Glyph-Realm: " + realm,
+			"Glyph-Exported-At: " + exportedAt,
+		}, "\n")
+	}
+	return fmt.Sprintf("Publish %s to %s", pub.Work, pub.Realm), strings.Join([]string{
+		"Export Glyph public projection.",
+		"",
+		"Glyph-Publication: " + pub.ID,
+		"Glyph-Work: " + pub.Work,
+		"Glyph-Realm: " + pub.Realm,
+		"Glyph-Mode: " + pub.Mode,
+		"Glyph-Published-At: " + pub.Created,
+		"Glyph-Exported-At: " + exportedAt,
+	}, "\n")
+}
+
+func addPublicationAuditData(data map[string]any, pub *exportPublication) {
+	if pub == nil {
+		return
+	}
+	data["publication"] = pub.ID
+	data["work"] = pub.Work
+	data["dest_realm"] = pub.Realm
+	data["mode"] = pub.Mode
+	data["published_at"] = pub.Created
+}
+
+func gitHead(dir string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git rev-parse HEAD: %w", err)
+	}
+	return strings.TrimSpace(string(out)), nil
 }
