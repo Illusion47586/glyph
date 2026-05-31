@@ -1,0 +1,67 @@
+---
+title: "Quickstart"
+description: "Run the Glyph prototype locally."
+---
+
+Glyph is currently a Go CLI prototype.
+
+```sh
+go test ./...
+go run ./cmd/glyph init --json
+go run ./cmd/glyph import . --json
+go run ./cmd/glyph status --json
+```
+
+If you want a local `glyph` binary during development:
+
+```sh
+go build -o ./bin/glyph ./cmd/glyph
+./bin/glyph status --json
+```
+
+When using an installed or locally built `glyph` binary, the same command shape is:
+
+```sh
+glyph init --json
+glyph import . --json
+glyph work start docs-update --from public --json
+glyph write docs-update README.md --reason "update readme" --json < README.md
+glyph diff docs-update --json
+glyph publish docs-update --to public --mode squash --json
+glyph work prune docs-update --json
+```
+
+## Inspect The Mesh
+
+Generate the local visualizer:
+
+```sh
+go run ./cmd/glyph viz export --json
+```
+
+Open:
+
+```text
+.glyph/visualizer/index.html
+```
+
+## Export To Git
+
+Glyph can export the public realm to a clean Git repository:
+
+```sh
+go run ./cmd/glyph export git --realm public --out /tmp/glyph-export --json
+```
+
+GitHub sync is configured through Glyph remotes:
+
+```sh
+go run ./cmd/glyph remote list --json
+go run ./cmd/glyph remote sync origin --json
+```
+
+## Important Bootstrap Rule
+
+Do not run `git init` in this project root while dogfooding Glyph. GitHub is an export target; `.glyph/` is the local source-control store.
+
+For the full CLI surface, see [Command Reference](/docs/cli/command-reference).

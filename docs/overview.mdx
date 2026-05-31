@@ -1,0 +1,28 @@
+---
+title: "Overview"
+description: "Glyph is source control for agent-native coding workflows."
+---
+
+Glyph is an agent-native source control system built around permissioned source graphs, continuous work capture, and explicit publication.
+
+Git remains useful infrastructure. Glyph treats Git and GitHub as compatibility targets, not as the internal model.
+
+## What Glyph Changes
+
+- Realms are permissioned source views.
+- Work contexts replace branches as the unit of active work.
+- Snapshots and checkpoints capture progress without forcing commit rituals.
+- Publications make visibility changes explicit.
+- Agents use stable, non-interactive JSON commands.
+- The local source-control store lives in `.glyph/`.
+
+## Current State
+
+Glyph is in bootstrap/prototype mode. This repository is dogfooding Glyph itself: `.glyph/store.db` is the canonical local graph and GitHub is an export-only public mirror.
+
+## Read Next
+
+- [Quickstart](/docs/quickstart)
+- [Realms](/docs/concepts/realms)
+- [Work Contexts](/docs/concepts/work-contexts)
+- [Git Compatibility](/docs/concepts/git-compatibility)
