@@ -9,6 +9,7 @@ node_modules/
 /tmp/
 cmd/
 internal/
+*.go
 go.mod
 go.sum
 glyph.yaml
