@@ -53,3 +53,8 @@ defaults:
   viz:
     export:
       out: .glyph/visualizer
+
+checks:
+  public_export:
+    - name: go-test
+      command: go test ./...

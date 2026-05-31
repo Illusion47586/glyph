@@ -61,6 +61,14 @@ type BootstrapManifest struct {
 			} `yaml:"export"`
 		} `yaml:"viz"`
 	} `yaml:"defaults"`
+	Checks struct {
+		PublicExport []ExportCheck `yaml:"public_export"`
+	} `yaml:"checks"`
+}
+
+type ExportCheck struct {
+	Name    string `json:"name" yaml:"name"`
+	Command string `json:"command" yaml:"command"`
 }
 
 type AuditEvent struct {

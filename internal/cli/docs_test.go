@@ -49,6 +49,16 @@ func TestInstallCommandIsAvailable(t *testing.T) {
 	}
 }
 
+func TestCheckCommandIsAvailable(t *testing.T) {
+	out, err := executeCLI("check", "--help")
+	if err != nil {
+		t.Fatalf("check help: %v", err)
+	}
+	if !strings.Contains(out, "Run export checks for a realm") {
+		t.Fatalf("check help missing summary:\n%s", out)
+	}
+}
+
 func TestDocsShowJSONIncludesContent(t *testing.T) {
 	out, err := executeCLI("docs", "show", "cli/agent-guide", "--json")
 	if err != nil {

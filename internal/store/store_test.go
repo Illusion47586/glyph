@@ -270,6 +270,10 @@ defaults:
   viz:
     export:
       out: .glyph/visualizer
+checks:
+  public_export:
+    - name: shell-smoke
+      command: test -f glyph.yaml
 `)
 	write(t, filepath.Join(root, "docs/specs/README.md"), "# Specs\n")
 	write(t, filepath.Join(root, "internal/app.go"), "package internal\n")
@@ -280,6 +284,43 @@ defaults:
 		t.Fatalf("init: %v", err)
 	}
 	return root, st
+}
+
+func TestCheckRealmExportRunsConfiguredChecks(t *testing.T) {
+	_, st := newTestStore(t)
+	defer st.Close()
+	if _, err := st.ImportWorkspace(); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+	result, err := st.CheckRealmExport(CheckOptions{Realm: "public", GitOptions: GitExportOptions{Gitignore: GitCompatGenerated, Gitinclude: GitCompatGenerated}})
+	if err != nil {
+		t.Fatalf("check export: %v", err)
+	}
+	if !result.OK || len(result.Checks) != 1 {
+		t.Fatalf("result = %#v", result)
+	}
+	if result.Checks[0].Name != "shell-smoke" || !result.Checks[0].OK {
+		t.Fatalf("check run = %#v", result.Checks[0])
+	}
+	if _, err := os.Stat(result.Out); !os.IsNotExist(err) {
+		t.Fatalf("temporary export was not removed: %v", err)
+	}
+}
+
+func TestCheckRealmExportReportsFailures(t *testing.T) {
+	root, st := newTestStore(t)
+	defer st.Close()
+	write(t, filepath.Join(root, "glyph.yaml"), strings.Replace(read(t, filepath.Join(root, "glyph.yaml")), "test -f glyph.yaml", "test -f missing.file", 1))
+	if _, err := st.ImportWorkspace(); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+	result, err := st.CheckRealmExport(CheckOptions{Realm: "public", GitOptions: GitExportOptions{Gitignore: GitCompatGenerated, Gitinclude: GitCompatGenerated}})
+	if err == nil {
+		t.Fatalf("check export succeeded, want failure")
+	}
+	if result == nil || result.OK || len(result.Checks) != 1 || result.Checks[0].OK {
+		t.Fatalf("failure result = %#v", result)
+	}
 }
 
 func write(t *testing.T, path, content string) {

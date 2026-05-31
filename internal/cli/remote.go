@@ -134,7 +134,9 @@ func remoteInspectCmd() *cobra.Command {
 }
 
 func remoteSyncCmd() *cobra.Command {
-	return &cobra.Command{
+	var skipChecks bool
+	var checkNames []string
+	cmd := &cobra.Command{
 		Use:   "sync <name>",
 		Short: "Sync a remote",
 		Args:  cobra.ExactArgs(1),
@@ -147,6 +149,17 @@ func remoteSyncCmd() *cobra.Command {
 			defaults, err := store.LoadBootstrapManifest(st.Root)
 			if err != nil {
 				return err
+			}
+			if !skipChecks {
+				checkResult, err := runPublicExportChecks(st, defaults, checkNames)
+				if err != nil {
+					return formatCheckFailure(checkResult, err)
+				}
+				if len(checkResult.Checks) > 0 {
+					if err := humanf(cmd, "checks passed for public\n"); err != nil {
+						return err
+					}
+				}
 			}
 			result, err := st.SyncRemoteWithOptions(args[0], store.GitExportOptions{
 				Gitignore:  defaults.Defaults.Export.Git.Gitignore,
@@ -161,6 +174,9 @@ func remoteSyncCmd() *cobra.Command {
 			return writeResponse(cmd, "remote_synced", result)
 		},
 	}
+	cmd.Flags().BoolVar(&skipChecks, "skip-checks", false, "skip configured public export checks before syncing")
+	cmd.Flags().StringArrayVar(&checkNames, "check", nil, "run only the named pre-sync check; repeat for multiple checks")
+	return cmd
 }
 
 func mountCmd() *cobra.Command {

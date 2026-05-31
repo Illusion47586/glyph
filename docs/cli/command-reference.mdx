@@ -10,6 +10,7 @@ All commands support `--json` as a global flag. JSON mode is the preferred inter
 | Command | Purpose | Arguments | Flags |
 | --- | --- | --- | --- |
 | `glyph install` | Copy the running binary into the user bin directory and add that directory to PATH for new terminals. | None | `--bin-dir` |
+| `glyph check <realm>` | Materialize a realm export and run configured export checks. | `realm` | `--check`, `--keep`, `--out` |
 | `glyph init` | Initialize `.glyph/` in the current project. | None | None |
 | `glyph import <path>` | Import files from a workspace path into the public source graph. | `path`: directory to import | None |
 | `glyph status` | Show store status, database path, and object counts. | None | None |
@@ -17,6 +18,7 @@ All commands support `--json` as a global flag. JSON mode is the preferred inter
 
 ```sh
 glyph install --json
+glyph check public --json
 glyph init --json
 glyph import . --json
 glyph status --json
@@ -122,7 +124,7 @@ glyph skills show glyph --json
 | `glyph remote add <name> <spec>` | Add an export remote. | `name`, `spec` | `--mode` |
 | `glyph remote list` | List configured remotes. | None | None |
 | `glyph remote inspect <name>` | Show remote metadata. | `name` | None |
-| `glyph remote sync <name>` | Export and push a remote. | `name` | None |
+| `glyph remote sync <name>` | Run public export checks, then export and push a remote. | `name` | `--skip-checks`, `--check` |
 
 Git compatibility modes for generated files are `none`, `generated`, and `overwrite`. Defaults come from `glyph.yaml`.
 
