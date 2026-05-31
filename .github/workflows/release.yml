@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+  release:
+    name: Build and release
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF_TYPE:-}" != "tag" ]]; then
+            version="dev-${GITHUB_RUN_NUMBER}"
+          fi
+          built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          ldflags="-s -w -X glyph/internal/cli.version=${version} -X glyph/internal/cli.commit=${GITHUB_SHA} -X glyph/internal/cli.date=${built_at}"
+
+          targets=(
+            "darwin arm64"
+            "darwin amd64"
+            "linux arm64"
+            "linux amd64"
+            "windows amd64"
+          )
+
+          for target in "${targets[@]}"; do
+            read -r goos goarch <<<"${target}"
+            name="glyph-${version}-${goos}-${goarch}"
+            if [[ "${goos}" == "windows" ]]; then
+              name="${name}.exe"
+            fi
+            CGO_ENABLED=0 GOOS="${goos}" GOARCH="${goarch}" go build -trimpath -ldflags="${ldflags}" -o "dist/${name}" ./cmd/glyph
+          done
+
+          (cd dist && sha256sum * > checksums.txt)
+
+      - name: Upload release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true

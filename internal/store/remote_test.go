@@ -1,6 +1,7 @@
 package store
 
 import (
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -16,6 +17,22 @@ func TestRemoteURL(t *testing.T) {
 		if got := remoteURL(spec); got != want {
 			t.Fatalf("remoteURL(%q) = %q, want %q", spec, got, want)
 		}
+	}
+}
+
+func TestEnsureGitAvailableReportsMissingGit(t *testing.T) {
+	originalLookPath := lookPath
+	t.Cleanup(func() { lookPath = originalLookPath })
+	lookPath = func(file string) (string, error) {
+		if file != "git" {
+			t.Fatalf("lookPath called with %q", file)
+		}
+		return "", exec.ErrNotFound
+	}
+
+	err := ensureGitAvailable()
+	if err == nil || !strings.Contains(err.Error(), "git is required") {
+		t.Fatalf("ensureGitAvailable error = %v", err)
 	}
 }
 

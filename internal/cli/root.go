@@ -10,15 +10,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
+
+type versionInfo struct {
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+	Date    string `json:"date"`
+}
+
 func NewRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "glyph",
 		Short:         "Agent-native source control",
+		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	root.SetVersionTemplate("glyph {{.Version}}\n")
 	root.PersistentFlags().Bool("json", false, "emit stable JSON output for agents")
 	root.AddCommand(
+		versionCmd(),
 		initCmd(),
 		importCmd(),
 		statusCmd(),
@@ -52,6 +67,25 @@ func Execute() error {
 		return err
 	}
 	return nil
+}
+
+func versionCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Show Glyph version information",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			info := versionInfo{
+				Version: version,
+				Commit:  commit,
+				Date:    date,
+			}
+			if modeFrom(cmd).JSON {
+				return writeResponse(cmd, "version", info)
+			}
+			return humanf(cmd, "glyph %s\ncommit: %s\nbuilt: %s\n", info.Version, info.Commit, info.Date)
+		},
+	}
 }
 
 type jsonReportedError struct {

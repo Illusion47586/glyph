@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -33,5 +34,29 @@ func TestWriteJSONErrorUsesStableCode(t *testing.T) {
 	}
 	if got.Error.Code != "not_found" {
 		t.Fatalf("got code %q, want not_found", got.Error.Code)
+	}
+}
+
+func TestWriteJSONErrorUsesMissingDependencyCode(t *testing.T) {
+	cmd := &cobra.Command{Use: "glyph"}
+	cmd.PersistentFlags().Bool("json", false, "")
+	if err := cmd.PersistentFlags().Set("json", "true"); err != nil {
+		t.Fatal(err)
+	}
+
+	errOut := new(bytes.Buffer)
+	cmd.SetErr(errOut)
+
+	if err := writeJSONError(cmd, fmt.Errorf("git is required for this command but was not found in PATH")); err != nil {
+		t.Fatal(err)
+	}
+
+	var got errorResponse
+	if err := json.Unmarshal(errOut.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Error.Code != "missing_dependency" {
+		t.Fatalf("got code %q, want missing_dependency", got.Error.Code)
 	}
 }

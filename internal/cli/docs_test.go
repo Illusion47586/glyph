@@ -27,6 +27,18 @@ func TestDocsListJSONIncludesAgentGuide(t *testing.T) {
 	}
 }
 
+func TestVersionJSONIncludesBuildMetadata(t *testing.T) {
+	out, err := executeCLI("version", "--json")
+	if err != nil {
+		t.Fatalf("version: %v", err)
+	}
+	for _, want := range []string{`"type": "version"`, `"version": "dev"`, `"commit": "unknown"`, `"date": "unknown"`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("version output missing %q:\n%s", want, out)
+		}
+	}
+}
+
 func TestDocsShowJSONIncludesContent(t *testing.T) {
 	out, err := executeCLI("docs", "show", "cli/agent-guide", "--json")
 	if err != nil {

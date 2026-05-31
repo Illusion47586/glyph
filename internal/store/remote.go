@@ -29,6 +29,18 @@ type exportPublication struct {
 	Created string
 }
 
+var lookPath = exec.LookPath
+
+func ensureGitAvailable() error {
+	if _, err := lookPath("git"); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return fmt.Errorf("git is required for this command but was not found in PATH")
+		}
+		return fmt.Errorf("check git availability: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) AddRemote(name, spec, mode string) error {
 	if mode != "export-only" {
 		return fmt.Errorf("only export-only remotes are supported in prototype 0")
@@ -73,6 +85,9 @@ func (s *Store) ExportGit(realm, out string) error {
 func (s *Store) ExportGitWithOptions(realm, out string, opts GitExportOptions) (*GitExportResult, error) {
 	opts, err := opts.normalized()
 	if err != nil {
+		return nil, err
+	}
+	if err := ensureGitAvailable(); err != nil {
 		return nil, err
 	}
 	if err := ensureEmptyOrMissing(out); err != nil {
@@ -147,6 +162,9 @@ func (s *Store) SyncRemoteWithOptions(name string, opts GitExportOptions) (*Remo
 	}
 	if remote["mode"] != "export-only" {
 		return nil, fmt.Errorf("remote %s is not export-only", name)
+	}
+	if err := ensureGitAvailable(); err != nil {
+		return nil, err
 	}
 	out := filepath.Join(s.Dir, "exports", name)
 	if err := os.RemoveAll(out); err != nil {

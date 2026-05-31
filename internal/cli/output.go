@@ -56,6 +56,8 @@ func errorCode(err error) string {
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return "not_found"
+	case strings.Contains(err.Error(), "not found in PATH"):
+		return "missing_dependency"
 	case strings.Contains(err.Error(), "required"):
 		return "invalid_argument"
 	case strings.Contains(err.Error(), "not implemented"):
