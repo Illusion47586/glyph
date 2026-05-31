@@ -72,7 +72,7 @@ glyph diff docs-update --json
 | Command | Purpose | Arguments | Flags |
 | --- | --- | --- | --- |
 | `glyph checkpoint <work>` | Create a named milestone snapshot. | `work` | `--message` |
-| `glyph publish <work>` | Publish a work context into a realm. | `work` | `--to`, `--mode` |
+| `glyph publish <work>` | Publish a work context into a realm. | `work` | `--to`, `--mode`, `--semantic-type`, `--semantic-scope`, `--semantic-description` |
 | `glyph publication list` | List publications. | None | None |
 | `glyph publication inspect <id>` | Prototype placeholder for publication metadata inspection. | `id` | Not implemented in prototype 0 |
 
@@ -81,6 +81,7 @@ Publication modes are `squash` and `preserve`. `squash` publishes the final stat
 ```sh
 glyph checkpoint docs-update --message "docs ready" --json
 glyph publish docs-update --to public --mode squash --json
+glyph publish docs-update --to public --mode squash --semantic-type docs --semantic-scope cli --semantic-description "expand command docs" --json
 glyph publication list --json
 ```
 

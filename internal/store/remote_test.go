@@ -62,6 +62,32 @@ func TestGitExportCommitMessageIncludesPublicationTrailers(t *testing.T) {
 	}
 }
 
+func TestGitExportCommitMessageUsesSemanticSubject(t *testing.T) {
+	pub := &exportPublication{
+		ID:                  "publication:123",
+		Work:                "semantic-publications",
+		Realm:               "public",
+		Mode:                "squash",
+		Created:             "2026-05-31T07:09:33Z",
+		SemanticType:        "feat",
+		SemanticScope:       "publish",
+		SemanticDescription: "support semantic publication metadata",
+	}
+	subject, body := gitExportCommitMessage("public", pub, "2026-05-31T12:00:00Z")
+	if subject != "feat(publish): support semantic publication metadata" {
+		t.Fatalf("subject = %q", subject)
+	}
+	for _, want := range []string{
+		"Glyph-Semantic-Type: feat",
+		"Glyph-Semantic-Scope: publish",
+		"Glyph-Semantic-Description: support semantic publication metadata",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body missing %q:\n%s", want, body)
+		}
+	}
+}
+
 func TestGitExportCommitMessageWithoutPublication(t *testing.T) {
 	subject, body := gitExportCommitMessage("public", nil, "2026-05-31T12:00:00Z")
 	if subject != "Export Glyph public projection" {

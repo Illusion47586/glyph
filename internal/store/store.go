@@ -260,6 +260,15 @@ func (s *Store) initSchema() error {
 	if err := s.ensureColumn("publications", "mode", "TEXT NOT NULL DEFAULT 'squash'"); err != nil {
 		return err
 	}
+	if err := s.ensureColumn("publications", "semantic_type", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := s.ensureColumn("publications", "semantic_scope", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	if err := s.ensureColumn("publications", "semantic_description", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
 	return nil
 }
 

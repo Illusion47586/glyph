@@ -331,6 +331,13 @@ Publishes a work context into a realm.
 
 ```sh
 glyph publish agentic-docs --to public --mode squash --json
+glyph publish agentic-docs \
+  --to public \
+  --mode squash \
+  --semantic-type docs \
+  --semantic-scope cli \
+  --semantic-description "expand agentic docs" \
+  --json
 ```
 
 Modes:
@@ -341,6 +348,14 @@ Modes:
 | `preserve` | The intermediate sequence is important and should remain visible. |
 
 Publication is intentional. Agents should not publish unless the human requested it or the workflow explicitly authorizes it.
+
+Semantic publication metadata lets exported Git commits use a Conventional Commit-style subject:
+
+```text
+docs(cli): expand agentic docs
+```
+
+The metadata is stored with the publication and exported as Glyph trailers in the Git commit body. If semantic metadata is omitted, Glyph keeps its default publication subject.
 
 ### `glyph publication list`
 

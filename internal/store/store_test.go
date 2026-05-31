@@ -164,6 +164,35 @@ func TestPublishHooks(t *testing.T) {
 	}
 }
 
+func TestPublishWithSemanticMetadata(t *testing.T) {
+	_, st := newTestStore(t)
+	defer st.Close()
+	if _, err := st.ImportWorkspace(); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+	if _, err := st.StartWork("semantic", "public"); err != nil {
+		t.Fatalf("start work: %v", err)
+	}
+	if _, err := st.PublishWithOptions(PublishOptions{
+		Work:                "semantic",
+		DestRealm:           "public",
+		Mode:                "squash",
+		SemanticType:        "docs",
+		SemanticScope:       "cli",
+		SemanticDescription: "document semantic publications",
+	}); err != nil {
+		t.Fatalf("publish: %v", err)
+	}
+	pubs, err := st.ListPublications()
+	if err != nil {
+		t.Fatalf("list publications: %v", err)
+	}
+	got := pubs[len(pubs)-1]
+	if got["semantic_type"] != "docs" || got["semantic_scope"] != "cli" || got["semantic_description"] != "document semantic publications" {
+		t.Fatalf("semantic metadata = %#v", got)
+	}
+}
+
 func TestExportGitGeneratesCompatibilityFiles(t *testing.T) {
 	root, st := newTestStore(t)
 	defer st.Close()

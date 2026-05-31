@@ -22,11 +22,14 @@ type RemoteSyncResult struct {
 }
 
 type exportPublication struct {
-	ID      string
-	Work    string
-	Realm   string
-	Mode    string
-	Created string
+	ID                  string
+	Work                string
+	Realm               string
+	Mode                string
+	Created             string
+	SemanticType        string
+	SemanticScope       string
+	SemanticDescription string
 }
 
 var lookPath = exec.LookPath
@@ -252,9 +255,9 @@ func remoteURL(spec string) string {
 }
 
 func (s *Store) latestPublicationForRealm(realm string) (*exportPublication, error) {
-	row := s.DB.QueryRow(`SELECT id, work_name, dest_realm, mode, created_at FROM publications WHERE dest_realm = ? AND status = 'published' ORDER BY created_at DESC, id DESC LIMIT 1`, realm)
+	row := s.DB.QueryRow(`SELECT id, work_name, dest_realm, mode, created_at, semantic_type, semantic_scope, semantic_description FROM publications WHERE dest_realm = ? AND status = 'published' ORDER BY created_at DESC, id DESC LIMIT 1`, realm)
 	var pub exportPublication
-	if err := row.Scan(&pub.ID, &pub.Work, &pub.Realm, &pub.Mode, &pub.Created); err != nil {
+	if err := row.Scan(&pub.ID, &pub.Work, &pub.Realm, &pub.Mode, &pub.Created, &pub.SemanticType, &pub.SemanticScope, &pub.SemanticDescription); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -272,7 +275,11 @@ func gitExportCommitMessage(realm string, pub *exportPublication, exportedAt str
 			"Glyph-Exported-At: " + exportedAt,
 		}, "\n")
 	}
-	return fmt.Sprintf("Publish %s to %s", pub.Work, pub.Realm), strings.Join([]string{
+	subject := fmt.Sprintf("Publish %s to %s", pub.Work, pub.Realm)
+	if semanticSubject := publicationSemanticSubject(pub); semanticSubject != "" {
+		subject = semanticSubject
+	}
+	body := []string{
 		"Export Glyph public projection.",
 		"",
 		"Glyph-Publication: " + pub.ID,
@@ -281,7 +288,25 @@ func gitExportCommitMessage(realm string, pub *exportPublication, exportedAt str
 		"Glyph-Mode: " + pub.Mode,
 		"Glyph-Published-At: " + pub.Created,
 		"Glyph-Exported-At: " + exportedAt,
-	}, "\n")
+	}
+	if pub.SemanticType != "" {
+		body = append(body,
+			"Glyph-Semantic-Type: "+pub.SemanticType,
+			"Glyph-Semantic-Scope: "+pub.SemanticScope,
+			"Glyph-Semantic-Description: "+pub.SemanticDescription,
+		)
+	}
+	return subject, strings.Join(body, "\n")
+}
+
+func publicationSemanticSubject(pub *exportPublication) string {
+	if pub == nil || pub.SemanticType == "" || pub.SemanticDescription == "" {
+		return ""
+	}
+	if pub.SemanticScope != "" {
+		return fmt.Sprintf("%s(%s): %s", pub.SemanticType, pub.SemanticScope, pub.SemanticDescription)
+	}
+	return fmt.Sprintf("%s: %s", pub.SemanticType, pub.SemanticDescription)
 }
 
 func addPublicationAuditData(data map[string]any, pub *exportPublication) {
@@ -293,6 +318,11 @@ func addPublicationAuditData(data map[string]any, pub *exportPublication) {
 	data["dest_realm"] = pub.Realm
 	data["mode"] = pub.Mode
 	data["published_at"] = pub.Created
+	if pub.SemanticType != "" {
+		data["semantic_type"] = pub.SemanticType
+		data["semantic_scope"] = pub.SemanticScope
+		data["semantic_description"] = pub.SemanticDescription
+	}
 }
 
 func gitHead(dir string) (string, error) {

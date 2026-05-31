@@ -37,7 +37,7 @@ func checkpointCmd() *cobra.Command {
 }
 
 func publishCmd() *cobra.Command {
-	var to, mode string
+	var to, mode, semanticType, semanticScope, semanticDescription string
 	cmd := &cobra.Command{
 		Use:   "publish <work>",
 		Short: "Publish a work context into a realm",
@@ -48,18 +48,34 @@ func publishCmd() *cobra.Command {
 				return err
 			}
 			defer st.Close()
-			id, err := st.PublishWithMode(args[0], to, mode)
+			id, err := st.PublishWithOptions(store.PublishOptions{
+				Work:                args[0],
+				DestRealm:           to,
+				Mode:                mode,
+				SemanticType:        semanticType,
+				SemanticScope:       semanticScope,
+				SemanticDescription: semanticDescription,
+			})
 			if err != nil {
 				return err
 			}
 			if err := humanf(cmd, "published %s\n", id); err != nil {
 				return err
 			}
-			return writeResponse(cmd, "publish", map[string]any{"publication": id, "work": args[0], "realm": to, "mode": mode})
+			data := map[string]any{"publication": id, "work": args[0], "realm": to, "mode": mode}
+			if semanticType != "" {
+				data["semantic_type"] = semanticType
+				data["semantic_scope"] = semanticScope
+				data["semantic_description"] = semanticDescription
+			}
+			return writeResponse(cmd, "publish", data)
 		},
 	}
 	cmd.Flags().StringVar(&to, "to", "public", "destination realm")
 	cmd.Flags().StringVar(&mode, "mode", "squash", "publication history mode: squash or preserve")
+	cmd.Flags().StringVar(&semanticType, "semantic-type", "", "semantic commit type for exported Git commits, such as feat, fix, docs, chore, or ci")
+	cmd.Flags().StringVar(&semanticScope, "semantic-scope", "", "optional semantic commit scope for exported Git commits")
+	cmd.Flags().StringVar(&semanticDescription, "semantic-description", "", "semantic commit description for exported Git commits")
 	return cmd
 }
 
