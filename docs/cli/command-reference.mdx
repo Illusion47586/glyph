@@ -94,6 +94,24 @@ glyph hook list --json
 glyph hook run pre-publish --work docs-update --to public --mode squash --json
 ```
 
+## Documentation And Skill Commands
+
+| Command | Purpose | Arguments | Flags |
+| --- | --- | --- | --- |
+| `glyph docs list` | List documentation bundled into the Glyph binary. | None | None |
+| `glyph docs show <id>` | Print one bundled document. | `id`: document ID from `docs list` | None |
+| `glyph skills list` | List agent skills bundled into the Glyph binary. | None | None |
+| `glyph skills show <name>` | Print one bundled agent skill. | `name`: skill name from `skills list` | None |
+
+Human mode prints Markdown to stdout. JSON mode returns stable metadata and, for `show`, the full content.
+
+```sh
+glyph docs list --json
+glyph docs show cli/agent-guide --json
+glyph skills list --json
+glyph skills show glyph --json
+```
+
 ## Git And Remote Commands
 
 | Command | Purpose | Arguments | Flags |

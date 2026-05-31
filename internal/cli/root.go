@@ -32,6 +32,8 @@ func NewRootCommand() *cobra.Command {
 		publishCmd(),
 		publicationCmd(),
 		hookCmd(),
+		docsCmd(),
+		skillsCmd(),
 		vizCmd(),
 		exportCmd(),
 		remoteCmd(),
