@@ -1,0 +1,309 @@
+---
+title: "Workflow Reference"
+description: "End-to-end Glyph workflows for humans, agents, publication, GitHub sync, and documentation deployment."
+---
+
+Glyph workflows are explicit by design. A work context can collect many snapshots, but a realm changes only when someone publishes. A GitHub mirror changes only when someone syncs.
+
+## The Standard Agent Loop
+
+Use this when an agent is doing ordinary source work.
+
+```sh
+glyph status --json
+glyph work start task-name --from public --json
+glyph work claim task-name --actor agent:codex:task-name --mode exclusive --ttl 30m --json
+
+glyph read task-name path/to/file --json
+glyph write task-name path/to/file --reason "explain the change" --json < path/to/file
+
+glyph diff task-name --json
+glyph checkpoint task-name --message "meaningful milestone" --json
+glyph work conflicts task-name --json
+glyph check public --json
+
+glyph publish task-name --to public --mode squash --json
+glyph work release task-name --actor agent:codex:task-name --json
+glyph work prune task-name --json
+glyph remote sync origin --json
+```
+
+Why this works well for agents:
+
+- The agent has a named work context instead of an implicit dirty tree.
+- Each write carries a reason.
+- Checkpoints preserve progress without turning every step into public history.
+- Publication is a clear visibility transition.
+- Remote sync validates the public projection before GitHub receives it.
+
+## Human Review Before Publication
+
+Use this when the agent should prepare work but a human decides whether it lands.
+
+```sh
+glyph work start auth-review --from public --json
+glyph work claim auth-review --actor agent:codex:auth-review --mode exclusive --ttl 30m --json
+glyph write auth-review internal/auth/session.go --reason "tighten session expiry" --json < internal/auth/session.go
+glyph diff auth-review --json
+glyph checkpoint auth-review --message "ready for human review" --json
+glyph work release auth-review --actor agent:codex:auth-review --json
+```
+
+The human can then inspect:
+
+```sh
+glyph diff auth-review --json
+glyph work conflicts auth-review --json
+glyph publish auth-review --to public --mode squash --json
+```
+
+This keeps agent autonomy high while preserving human control over publication.
+
+## Multiple Agents On Related Work
+
+Use claims and dependencies when two agents are active.
+
+```sh
+glyph work start data-layer --from public --json
+glyph work start api-layer --from public --json
+
+glyph work claim data-layer --actor agent:codex:data --mode exclusive --ttl 30m --json
+glyph work claim api-layer --actor agent:claude-code:api --mode exclusive --ttl 30m --json
+
+glyph work depend api-layer data-layer --json
+glyph work conflicts data-layer --json
+glyph work conflicts api-layer --json
+```
+
+Publish in dependency order:
+
+```sh
+glyph publish data-layer --to public --mode squash --json
+glyph publish api-layer --to public --mode squash --json
+glyph remote sync origin --json
+```
+
+Git branches can represent this, but they do not explain agent ownership, heartbeat state, or dependency intent as directly.
+
+## Documentation-Only Work
+
+Use this for docs updates.
+
+```sh
+glyph work start docs-topic --from public --json
+glyph write docs-topic docs/cli/workflow-reference.mdx --reason "add workflow reference" --json < docs/cli/workflow-reference.mdx
+glyph write docs-topic docs.json --reason "add docs page to navigation" --json < docs.json
+glyph diff docs-topic --json
+glyph checkpoint docs-topic --message "docs ready" --json
+glyph publish docs-topic --to public --mode squash --json
+glyph work prune docs-topic --json
+glyph remote sync origin --json
+```
+
+If the docs site is deployed from the workspace, run the deployment script after the public sync:
+
+```sh
+scripts/deploy-cloudflare-docs.sh
+```
+
+The project script validates Mintlify docs, checks links, exports static docs, checks the export boundary, and deploys to Cloudflare Pages.
+
+## Release Binary Workflow
+
+Use this when changing the CLI in a way that should produce downloadable binaries.
+
+```sh
+glyph work start cli-change --from public --json
+glyph write cli-change internal/cli/root.go --reason "add command" --json < internal/cli/root.go
+glyph diff cli-change --json
+glyph checkpoint cli-change --message "cli change ready" --json
+glyph check public --json
+glyph publish cli-change --to public --mode squash --json
+glyph work prune cli-change --json
+glyph remote sync origin --json
+```
+
+The GitHub workflow builds binaries on every `main` push and creates GitHub Releases on `v*` tags.
+
+For a release:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The Git commands operate on the exported Git mirror. The canonical source graph remains Glyph.
+
+## Public Projection Validation
+
+Use this before any operation where the exported public tree matters.
+
+```sh
+glyph check public --json
+```
+
+To inspect the exact exported tree:
+
+```sh
+glyph check public --keep --json
+glyph check public --out /tmp/glyph-public-check --json
+```
+
+Checks are configured in `glyph.yaml`:
+
+```yaml
+checks:
+  public_export:
+    - name: go-test
+      command: go test ./...
+```
+
+This catches problems caused by realm boundaries. For example, if Go code embeds a docs file that was not published to `public`, the check fails locally before GitHub Actions sees the broken export.
+
+## GitHub Mirror Workflow
+
+Use this when publishing public-compatible work to GitHub.
+
+```sh
+glyph remote list --json
+glyph check public --json
+glyph remote sync origin --json
+```
+
+`remote sync` does four things:
+
+1. Runs public export checks unless `--skip-checks` is passed.
+2. Materializes the `public` realm.
+3. Creates a clean Git repository from that projection.
+4. Pushes the generated Git commit to the configured remote.
+
+Use `--skip-checks` sparingly:
+
+```sh
+glyph remote sync origin --skip-checks --json
+```
+
+Skipping checks is useful only when a validation tool is temporarily unavailable and a human accepts the risk.
+
+## Local Exploration Without Publication
+
+Use this when an agent needs to experiment.
+
+```sh
+glyph work start experiment-parser --from public --json
+glyph work claim experiment-parser --actor agent:codex:parser --mode exclusive --ttl 30m --json
+glyph write experiment-parser internal/parser/prototype.go --reason "try parser shape" --json < internal/parser/prototype.go
+glyph checkpoint experiment-parser --message "parser experiment" --json
+glyph work release experiment-parser --actor agent:codex:parser --json
+```
+
+Do not publish until the experiment becomes intentional product work. In later prototypes, discard policy will provide a controlled way to retire abandoned experiments.
+
+## Emergency Fix Workflow
+
+Use this when a public build or docs deploy is broken.
+
+```sh
+glyph work start fix-ci --from public --json
+glyph write fix-ci path/to/broken/file --reason "fix failing public build" --json < path/to/broken/file
+glyph check public --json
+glyph publish fix-ci --to public --mode squash --json
+glyph work prune fix-ci --json
+glyph remote sync origin --json
+```
+
+If the failure is caused by the check command itself and you need to restore the mirror:
+
+```sh
+glyph remote sync origin --skip-checks --json
+```
+
+Record why you skipped checks in the surrounding work context or publication notes.
+
+## Maintainer-Only Work
+
+Use a non-public realm when the content should not be exported.
+
+```sh
+glyph work start embargoed-fix --from maintainers --json
+glyph publish embargoed-fix --to maintainers --mode preserve --json
+```
+
+Do not sync private or maintainer realms to GitHub unless the remote policy explicitly allows it. The current prototype's GitHub remote sync exports `public`.
+
+## Deployment Workflow For This Docs Site
+
+For this repository:
+
+```sh
+glyph check public --json
+glyph remote sync origin --json
+scripts/deploy-cloudflare-docs.sh
+```
+
+The deploy script:
+
+1. Runs `npx mintlify@latest validate`.
+2. Runs `npx mintlify@latest broken-links --check-anchors --check-redirects`.
+3. Exports the docs to a zip file.
+4. Unpacks the static export.
+5. Refuses to deploy if the export contains Glyph store files or Go source.
+6. Deploys to Cloudflare Pages with Wrangler.
+
+Set these environment variables when needed:
+
+```sh
+CLOUDFLARE_PAGES_PROJECT=glyph
+MINT_EXPORT_ZIP=/tmp/glyph-docs-export.zip
+MINT_EXPORT_DIR=/tmp/glyph-docs-export
+```
+
+## Choosing `squash` Or `preserve`
+
+Use `squash` for most public work:
+
+```sh
+glyph publish docs-topic --to public --mode squash --json
+```
+
+Use `preserve` when the sequence matters:
+
+```sh
+glyph publish security-review --to maintainers --mode preserve --json
+```
+
+Good reasons to preserve:
+
+- Security-sensitive review history.
+- Multi-agent handoff.
+- A design investigation where the path matters.
+- Auditable maintainer-only decisions.
+
+Good reasons to squash:
+
+- Documentation cleanup.
+- Simple CLI changes.
+- Routine bug fixes.
+- Generated artifact updates.
+
+## Recovery Checklist
+
+When something feels off:
+
+```sh
+glyph status --json
+glyph work list --json
+glyph publication list --json
+glyph remote list --json
+glyph check public --json
+```
+
+Then inspect the specific work context:
+
+```sh
+glyph work status task-name --json
+glyph diff task-name --json
+glyph work conflicts task-name --json
+```
+
+This gives an agent enough structured state to decide whether to continue, publish, prune, or ask a human.

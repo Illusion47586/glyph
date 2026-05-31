@@ -1,0 +1,542 @@
+---
+title: "Command Details"
+description: "Detailed behavior, outputs, and usage notes for every Glyph command."
+---
+
+This page describes what each command does, when to use it, and what to expect from JSON mode. For quick lookup, see [Command Reference](/docs/cli/command-reference).
+
+All commands accept the global `--json` flag. Agents should use it by default.
+
+## Top-Level Commands
+
+### `glyph install`
+
+Installs the current `glyph` binary into a user-local bin directory and updates the user's PATH configuration for future terminals.
+
+```sh
+glyph install --json
+glyph install --bin-dir ~/.local/bin --json
+```
+
+Defaults:
+
+| Platform | Default install directory |
+| --- | --- |
+| macOS, Linux | `~/.local/bin` |
+| Windows | `%LOCALAPPDATA%\Glyph\bin` |
+
+The command returns the installed path, whether the binary was copied, whether PATH was already configured, and the shell command to update the current terminal session.
+
+Use this after downloading a release binary or building Glyph locally.
+
+### `glyph version`
+
+Prints version metadata embedded at build time.
+
+```sh
+glyph version --json
+glyph --version
+```
+
+Release builds set version, commit, and build date through Go linker flags. Development builds report `dev`, `unknown`, and `unknown`.
+
+### `glyph init`
+
+Initializes a Glyph store in the current project.
+
+```sh
+glyph init --json
+```
+
+It creates `.glyph/`, initializes `.glyph/store.db`, prepares content, audit, workspace, export, and hook directories, and inserts the initial `public` and `maintainers` realms.
+
+Do not run `git init` as part of Glyph bootstrap. Git is an export target; `.glyph/store.db` is the local source-control database.
+
+### `glyph import <path>`
+
+Imports files from the project workspace into the source graph according to `glyph.yaml`.
+
+```sh
+glyph import . --json
+```
+
+The current prototype imports the configured public allowlist. Excluded paths such as `.glyph/**`, `.git/**`, dependency directories, and private transcript paths stay out of the public graph.
+
+Use this when bootstrapping a project or when a direct filesystem edit needs to be brought back into Glyph.
+
+### `glyph status`
+
+Shows store location, database location, store role, schema version, and object counts.
+
+```sh
+glyph status --json
+```
+
+Agents should start most sessions with `status` so they know whether they are inside a Glyph workspace and can report the current store health.
+
+### `glyph graph`
+
+Shows a compact source graph summary.
+
+```sh
+glyph graph --json
+```
+
+This is useful for quick automation checks. For a browsable local view, use `glyph viz export`.
+
+### `glyph check <realm>`
+
+Materializes a realm export and runs configured export checks.
+
+```sh
+glyph check public --json
+glyph check public --check go-test --json
+glyph check public --keep --json
+glyph check public --out /tmp/glyph-public-check --json
+```
+
+Checks are configured in `glyph.yaml`:
+
+```yaml
+checks:
+  public_export:
+    - name: go-test
+      command: go test ./...
+```
+
+The check runs inside a temporary public export, not inside the working tree. This catches projection drift before GitHub does. If public does not include a file required by the build, `glyph check public` fails before `remote sync`.
+
+## Work Commands
+
+### `glyph work start <name>`
+
+Creates a new work context from a realm projection.
+
+```sh
+glyph work start docs-update --from public --json
+```
+
+A work context is the agent-native replacement for a feature branch. It has a name, a base realm, a materialized workspace path, and a status.
+
+Use short, task-oriented names:
+
+```text
+docs-update
+auth-timeout-fix
+release-workflow
+agentic-docs
+```
+
+### `glyph work list`
+
+Lists all work contexts and their statuses.
+
+```sh
+glyph work list --json
+```
+
+Common statuses:
+
+| Status | Meaning |
+| --- | --- |
+| `active` | Work projection is available for editing. |
+| `published` | Work was published to a realm. |
+| `pruned` | Work projection was removed; graph history remains. |
+| `discarded` | Reserved for future policy-controlled discard. |
+
+### `glyph work status <name>`
+
+Shows one work context.
+
+```sh
+glyph work status agentic-docs --json
+```
+
+Use this before resuming a task to avoid editing a pruned or already published context.
+
+### `glyph work snapshot <name>`
+
+Creates a manual snapshot of a work context.
+
+```sh
+glyph work snapshot agentic-docs --json
+```
+
+Snapshots capture state without publishing. They are useful before risky edits or tool-generated rewrites.
+
+### `glyph work claim <name>`
+
+Claims a work context for an actor.
+
+```sh
+glyph work claim agentic-docs \
+  --actor agent:codex:agentic-docs \
+  --mode exclusive \
+  --ttl 30m \
+  --json
+```
+
+Claims coordinate humans and agents. An exclusive claim says one actor is actively mutating the work context.
+
+Actor identifiers should be stable and descriptive:
+
+```text
+user:self:dhruv
+agent:codex:agentic-docs
+agent:claude-code:refactor-auth
+```
+
+### `glyph work heartbeat <name>`
+
+Extends an active claim.
+
+```sh
+glyph work heartbeat agentic-docs \
+  --actor agent:codex:agentic-docs \
+  --ttl 30m \
+  --json
+```
+
+Long-running agents should heartbeat while working so other actors can tell that the claim is still alive.
+
+### `glyph work release <name>`
+
+Releases an active claim.
+
+```sh
+glyph work release agentic-docs \
+  --actor agent:codex:agentic-docs \
+  --json
+```
+
+Release before handing off work, pausing for a long time, or letting another agent continue.
+
+### `glyph work conflicts <name>`
+
+Detects conflicts between active work contexts.
+
+```sh
+glyph work conflicts agentic-docs --json
+```
+
+Run this before publishing. A conflict means another active context has changed the same path in a way that needs ordering or review.
+
+### `glyph work depend <work> <depends-on>`
+
+Records a dependency between work contexts.
+
+```sh
+glyph work depend frontend-copy design-tokens --json
+```
+
+Use dependencies when one work context should publish only after another lands.
+
+### `glyph work prune <name>`
+
+Removes a completed materialized work projection while retaining history.
+
+```sh
+glyph work prune agentic-docs --json
+```
+
+Prune after publication when you no longer need the physical workspace. This keeps `.glyph/workspaces` from accumulating stale projections.
+
+### `glyph work discard <name>`
+
+Prototype placeholder for future policy-controlled discard.
+
+```sh
+glyph work discard abandoned-experiment --json
+```
+
+Prototype 0 does not implement discard because deletion and retention policy need stronger rules than local cleanup.
+
+## File Commands
+
+### `glyph read <work> <path>`
+
+Reads a file from a work context.
+
+```sh
+glyph read agentic-docs docs/cli/agent-guide.mdx --json
+```
+
+JSON mode returns:
+
+| Field | Meaning |
+| --- | --- |
+| `work` | Work context name. |
+| `path` | File path within the work context. |
+| `encoding` | `utf-8` or `base64`. |
+| `content` | File content. |
+
+Agents should prefer `glyph read` when a file is part of the source-control task. Direct filesystem reads are still useful for broad search and tool compatibility.
+
+### `glyph write <work> <path>`
+
+Writes stdin to a file in a work context.
+
+```sh
+glyph write agentic-docs docs/cli/agent-guide.mdx \
+  --reason "explain agent claim loop" \
+  --json < docs/cli/agent-guide.mdx
+```
+
+Always provide `--reason`. Reasons become provenance for audit logs and visualization.
+
+### `glyph project <work> <dir>`
+
+Materializes a work context into another directory.
+
+```sh
+glyph project agentic-docs /tmp/agentic-docs --json
+```
+
+Use this when a tool needs a normal directory separate from `.glyph/workspaces`.
+
+### `glyph diff <work>`
+
+Shows file-level changes for a work context.
+
+```sh
+glyph diff agentic-docs --json
+```
+
+Diff output is path-level in prototype 0:
+
+```text
+A docs/cli/agentic-development.mdx
+M docs.json
+```
+
+Use filesystem or language-specific tools for textual diff detail.
+
+## Snapshot And Publication Commands
+
+### `glyph checkpoint <work>`
+
+Creates a named milestone snapshot.
+
+```sh
+glyph checkpoint agentic-docs \
+  --message "agentic docs ready" \
+  --json
+```
+
+Checkpoint before publish and after meaningful milestones. Unlike Git commits, checkpoints do not have to become public history.
+
+### `glyph publish <work>`
+
+Publishes a work context into a realm.
+
+```sh
+glyph publish agentic-docs --to public --mode squash --json
+```
+
+Modes:
+
+| Mode | Use when |
+| --- | --- |
+| `squash` | The destination realm should receive one coherent final state. |
+| `preserve` | The intermediate sequence is important and should remain visible. |
+
+Publication is intentional. Agents should not publish unless the human requested it or the workflow explicitly authorizes it.
+
+### `glyph publication list`
+
+Lists publication records.
+
+```sh
+glyph publication list --json
+```
+
+Use this to audit what has landed in a realm and which work context produced it.
+
+### `glyph publication inspect <id>`
+
+Prototype placeholder for detailed publication metadata.
+
+```sh
+glyph publication inspect publication:123 --json
+```
+
+Prototype 0 returns a not-implemented error.
+
+## Hook Commands
+
+### `glyph hook list`
+
+Lists installed local hooks.
+
+```sh
+glyph hook list --json
+```
+
+Hooks live under `.glyph/hooks/` in prototype 0.
+
+### `glyph hook run <event>`
+
+Runs a local hook event.
+
+```sh
+glyph hook run pre-publish \
+  --work agentic-docs \
+  --to public \
+  --mode squash \
+  --json
+```
+
+Known publication events:
+
+| Event | Purpose |
+| --- | --- |
+| `pre-publish` | Validate before publication; failures block publish. |
+| `post-publish` | Run follow-up automation; failures are recorded. |
+
+## Documentation And Skill Commands
+
+### `glyph docs list`
+
+Lists documentation embedded in the binary.
+
+```sh
+glyph docs list --json
+```
+
+This lets agents inspect bundled guidance even when a full docs site is not available.
+
+### `glyph docs show <id>`
+
+Shows one embedded documentation page.
+
+```sh
+glyph docs show cli/agent-guide --json
+glyph docs show overview
+```
+
+Human mode prints Markdown. JSON mode includes metadata and content.
+
+### `glyph skills list`
+
+Lists bundled agent skills.
+
+```sh
+glyph skills list --json
+```
+
+Skills are instructions for agent workflows that should travel with the binary.
+
+### `glyph skills show <name>`
+
+Shows one bundled skill.
+
+```sh
+glyph skills show glyph --json
+```
+
+Agents can use this to load project-specific source-control rules without web access.
+
+## Git And Remote Commands
+
+### `glyph export git`
+
+Exports a realm to a clean Git repository.
+
+```sh
+glyph export git \
+  --realm public \
+  --out /tmp/glyph-public-export \
+  --gitignore generated \
+  --gitinclude generated \
+  --json
+```
+
+The export includes Git compatibility files when requested. It creates a Git commit representing the exported realm.
+
+This command requires `git` on PATH. Glyph checks that dependency before doing export work.
+
+### `glyph remote add <name> <spec>`
+
+Adds a remote.
+
+```sh
+glyph remote add origin github:OWNER/REPO --mode export-only --json
+```
+
+Supported prototype mode:
+
+| Mode | Meaning |
+| --- | --- |
+| `export-only` | Glyph pushes the public projection to an external Git remote. |
+
+Supported specs include:
+
+```text
+github:OWNER/REPO
+https://github.com/OWNER/REPO
+git@github.com:OWNER/REPO.git
+```
+
+### `glyph remote list`
+
+Lists configured remotes.
+
+```sh
+glyph remote list --json
+```
+
+### `glyph remote inspect <name>`
+
+Shows one remote.
+
+```sh
+glyph remote inspect origin --json
+```
+
+### `glyph remote sync <name>`
+
+Runs public export checks, exports `public` to a clean Git repository, attaches remote history, and pushes.
+
+```sh
+glyph remote sync origin --json
+```
+
+Use `--skip-checks` only for emergencies:
+
+```sh
+glyph remote sync origin --skip-checks --json
+```
+
+Use `--check` to run one or more named pre-sync checks:
+
+```sh
+glyph remote sync origin --check go-test --json
+```
+
+The important invariant is that GitHub should confirm the public projection, not discover basic projection failures.
+
+## Visualizer Commands
+
+### `glyph viz export`
+
+Writes a static local visualization of the Glyph mesh.
+
+```sh
+glyph viz export --json
+glyph viz export --out .glyph/visualizer --json
+```
+
+The visualizer helps humans and agents inspect realms, work contexts, publications, content, claims, conflicts, hooks, and remotes.
+
+## Mount Commands
+
+Mount commands are specified but deferred from prototype 0:
+
+```sh
+glyph mount add vendor/lib github:OWNER/LIB --json
+glyph mount list --json
+glyph mount update vendor/lib --json
+glyph mount inspect vendor/lib --json
+```
+
+Future mounts will model external source roots inside a Glyph project without flattening upstream identity.

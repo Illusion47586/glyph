@@ -32,8 +32,11 @@
         "pages": [
           "docs/cli/basics",
           "docs/cli/command-reference",
+          "docs/cli/command-details",
           "docs/cli/agent-guide",
+          "docs/cli/agentic-development",
           "docs/cli/workflows",
+          "docs/cli/workflow-reference",
           "docs/cli/github-export",
           "docs/cli/hooks",
           "docs/cli/visualizer"

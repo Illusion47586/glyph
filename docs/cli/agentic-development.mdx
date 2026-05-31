@@ -1,0 +1,346 @@
+---
+title: "Agentic Development"
+description: "Why Glyph is designed for coding agents and how to use it well."
+---
+
+Glyph is source control designed around the way coding agents actually work: they read context, make many intermediate edits, coordinate with humans and other agents, and publish only the part that should become visible.
+
+Git can support that workflow, but it does not model it directly. Glyph makes the agent workflow explicit.
+
+## The Problem With Treating Agents Like Humans
+
+A human often uses Git like this:
+
+```sh
+git checkout -b fix-auth
+edit files
+git add .
+git commit -m "fix auth"
+git push
+```
+
+An agent's real process is different:
+
+1. Inspect the task and project rules.
+2. Read several files.
+3. Try a small change.
+4. Run a tool.
+5. Rewrite the change.
+6. Check a failing edge case.
+7. Add tests.
+8. Prepare a final explanation.
+9. Ask whether publication or deployment is allowed.
+
+Git has commits and branches, but it does not know which intermediate states are agent scratch work, which states are meaningful checkpoints, which actor currently owns the work, or which source view is safe to publish.
+
+Glyph separates those ideas.
+
+## Agent-Native Concepts
+
+| Glyph concept | Agent meaning |
+| --- | --- |
+| Realm | The source view the agent is allowed to see or publish. |
+| Work context | The named task workspace the agent is changing. |
+| Claim | The actor currently responsible for a work context. |
+| Snapshot | Captured progress that does not have to become public history. |
+| Checkpoint | A named milestone worth remembering. |
+| Publication | A deliberate visibility transition into a realm. |
+| Prune | Remove a physical projection after the graph has retained history. |
+| Remote sync | Export the public projection to Git/GitHub compatibility. |
+
+This gives agents a safer vocabulary than "dirty tree plus branch."
+
+## Why Realms Matter
+
+Agents often need context boundaries:
+
+- Public code can go to GitHub.
+- Maintainer-only code may include private implementation details.
+- Embargoed security work should not leak through export.
+- Generated docs should include public pages but not local stores.
+
+Glyph models these as realms. A realm is not just a branch. It is a permissioned source view.
+
+```mermaid
+flowchart LR
+  graph["Glyph source graph"] --> public["public realm"]
+  graph --> maintainers["maintainers realm"]
+  public --> github["GitHub mirror"]
+  maintainers --> private["private maintainer work"]
+```
+
+Publication moves selected work into a realm. GitHub receives only the exported public projection.
+
+## Why Work Contexts Beat Branches For Agents
+
+A Git branch is a pointer in commit history. A Glyph work context is a task container.
+
+That difference matters because a task container can carry:
+
+- A human-readable task name.
+- A base realm.
+- A materialized workspace path.
+- Claims and heartbeats.
+- Snapshots and checkpoints.
+- Conflict relationships.
+- Publication state.
+
+Agents benefit from the extra structure. Instead of asking "which branch am I on?" they can ask:
+
+```sh
+glyph work status agentic-docs --json
+glyph work conflicts agentic-docs --json
+```
+
+The answers are structured and directly relevant to the task.
+
+## Why `--json` Is The Default Agent Interface
+
+Agents should not parse decorative terminal output. Glyph commands return stable JSON:
+
+```json
+{
+  "ok": true,
+  "type": "work_status",
+  "data": {
+    "name": "agentic-docs",
+    "base_realm": "public",
+    "status": "active"
+  }
+}
+```
+
+Errors are structured too:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "not_found",
+    "message": "work context not found"
+  }
+}
+```
+
+That makes Glyph easier to drive from Codex, Claude Code, Cursor, local scripts, or a future MCP server.
+
+## Reasons Beat Commit Messages For Intermediate Edits
+
+Agents make lots of small writes. Turning every edit into a Git commit creates noisy history. Skipping provenance entirely makes review harder.
+
+Glyph uses write reasons:
+
+```sh
+glyph write docs docs/overview.mdx \
+  --reason "explain publication boundary" \
+  --json < docs/overview.mdx
+```
+
+The reason says why that file changed without forcing a public commit. Checkpoints can mark meaningful milestones:
+
+```sh
+glyph checkpoint docs --message "publication section ready" --json
+```
+
+Publication later decides what becomes visible.
+
+## Publication Is A Human-Sized Decision
+
+Agents should be able to edit, test, and checkpoint freely. They should not silently change public state unless the workflow allows it.
+
+Glyph makes publication explicit:
+
+```sh
+glyph publish docs --to public --mode squash --json
+```
+
+That command says:
+
+- Which work context is landing.
+- Which realm receives it.
+- Whether the history is squashed or preserved.
+- Which audit event records the transition.
+
+Git can approximate this with merge commits or pull requests, but the meaning is indirect.
+
+## Public Export Checks Protect The Boundary
+
+GitHub CI sees the Git export, not the whole Glyph store. That is correct, but it means Glyph must validate the exported public projection before sync.
+
+Glyph does this with:
+
+```sh
+glyph check public --json
+```
+
+Configured in `glyph.yaml`:
+
+```yaml
+checks:
+  public_export:
+    - name: go-test
+      command: go test ./...
+```
+
+`remote sync` runs these checks by default:
+
+```sh
+glyph remote sync origin --json
+```
+
+This catches missing public files, broken embeds, and build-only projection problems before the GitHub mirror updates.
+
+## Claims And Heartbeats Make Coordination Visible
+
+Agent work can be concurrent. Without coordination, two agents can silently make incompatible edits.
+
+Glyph provides explicit claims:
+
+```sh
+glyph work claim api-fix \
+  --actor agent:codex:api-fix \
+  --mode exclusive \
+  --ttl 30m \
+  --json
+```
+
+Long-running work should heartbeat:
+
+```sh
+glyph work heartbeat api-fix \
+  --actor agent:codex:api-fix \
+  --ttl 30m \
+  --json
+```
+
+Claims do not replace review. They make active responsibility visible.
+
+## Conflicts Are About Work, Not Just Text
+
+In Git, conflict detection usually appears at merge time. Glyph can ask about conflicts between active work contexts:
+
+```sh
+glyph work conflicts api-fix --json
+```
+
+That lets agents detect interference before publication. It also gives humans a better coordination surface:
+
+- Which work contexts overlap?
+- Which path is disputed?
+- Which task should publish first?
+
+Dependencies make ordering explicit:
+
+```sh
+glyph work depend api-fix data-model --json
+```
+
+## Git Is Still Useful
+
+Glyph does not reject Git. It changes Git's role.
+
+| Git role | Glyph view |
+| --- | --- |
+| GitHub hosting | Public compatibility mirror. |
+| Git commits | Export artifacts from publications. |
+| GitHub Actions | External confirmation of public projection health. |
+| Git remotes | Sync targets. |
+| Git branches | Compatibility surface, not the source-control model. |
+
+This is why `remote sync` creates a clean Git export. GitHub gets normal commits. Glyph keeps the richer local source graph.
+
+## Recommended Agent Policy
+
+Agents working in a Glyph project should follow these rules:
+
+1. Start with `glyph status --json`.
+2. Use an explicit work context for changes.
+3. Claim active work when coordination matters.
+4. Use `glyph read` and `glyph write` when practical.
+5. Provide a reason for every write.
+6. Checkpoint meaningful milestones.
+7. Run `glyph work conflicts` before publication.
+8. Run `glyph check public` before public sync.
+9. Publish only when requested or authorized.
+10. Prune completed work projections.
+11. Sync remotes only when requested or authorized.
+
+These rules keep agent autonomy useful without making public state surprising.
+
+## What Glyph Does Better Than Git For Agents
+
+| Need | Git | Glyph |
+| --- | --- | --- |
+| Machine-readable command surface | Mixed porcelain output | `--json` everywhere important |
+| Task identity | Branch names by convention | Work contexts |
+| Active ownership | External convention | Claims and heartbeats |
+| Intermediate progress | Commits or stash | Snapshots and checkpoints |
+| Visibility boundary | Branch/repo conventions | Realms and publication |
+| Public export validation | Usually remote CI | Local pre-sync checks |
+| Cleanup | Delete branch/worktree manually | Prune projection, retain graph |
+| Agent guidance | External docs | Bundled docs and skills |
+
+The point is not that Git is bad. The point is that Git was not designed around autonomous tools that need structured state, explicit permissions, and safe publication boundaries.
+
+## Where Git Is Still Better Today
+
+Glyph is still a prototype. Git remains stronger for:
+
+- Universal hosting support.
+- Mature diff and merge tooling.
+- Established review workflows.
+- Large ecosystem integrations.
+- Familiar human workflows.
+
+Glyph should interoperate with Git while building a better agent-native model underneath.
+
+## A Good Agent Session
+
+A good session leaves behind:
+
+- A named work context.
+- Write reasons.
+- Checkpoints.
+- A clean diff.
+- Conflict checks.
+- Public export checks.
+- A publication record if the work landed.
+- A pruned projection if the workspace is done.
+- A remote sync record if GitHub was updated.
+
+That is much more useful to a future agent than "there is a branch with three commits and a dirty tree."
+
+## Failure Modes To Watch
+
+### Projection Drift
+
+The public realm may omit a file required by the build. Fix this with `glyph check public` and manifest-configured checks.
+
+### Silent Filesystem Edits
+
+An agent may edit files directly without writing through Glyph. Fix this by importing or writing the changed files into the work context before publication.
+
+### Stale Workspaces
+
+Long-lived materialized workspaces can confuse humans and tools. Prune completed work.
+
+### Unauthorized Publication
+
+An agent may be capable of publishing but not authorized to publish. Project instructions should say when publication and remote sync are allowed.
+
+### GitHub Mirror Confusion
+
+GitHub is an export-only mirror in this project. Do not treat it as the canonical store during Glyph dogfooding.
+
+## Future Agent Integrations
+
+The CLI is the first integration surface. Future integrations can add:
+
+- MCP tools over the same source graph.
+- Rich review objects.
+- Policy-aware partial publication.
+- Semantic conflict detection.
+- Bidirectional GitHub import as proposals.
+- Agent dashboards backed by the visualizer graph.
+
+The important part is that the model stays stable: agents work in contexts, publish to realms, and sync public projections intentionally.
