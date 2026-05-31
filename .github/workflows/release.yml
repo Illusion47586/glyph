@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch:
@@ -78,3 +80,10 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+
+      - name: Upload build artifacts
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v5
+        with:
+          name: glyph-${{ github.ref_name }}-${{ github.run_number }}
+          path: dist/*
