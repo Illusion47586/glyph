@@ -39,6 +39,16 @@ func TestVersionJSONIncludesBuildMetadata(t *testing.T) {
 	}
 }
 
+func TestInstallCommandIsAvailable(t *testing.T) {
+	out, err := executeCLI("install", "--help")
+	if err != nil {
+		t.Fatalf("install help: %v", err)
+	}
+	if !strings.Contains(out, "Install glyph into the user PATH") {
+		t.Fatalf("install help missing summary:\n%s", out)
+	}
+}
+
 func TestDocsShowJSONIncludesContent(t *testing.T) {
 	out, err := executeCLI("docs", "show", "cli/agent-guide", "--json")
 	if err != nil {

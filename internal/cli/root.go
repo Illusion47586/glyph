@@ -34,6 +34,7 @@ func NewRootCommand() *cobra.Command {
 	root.PersistentFlags().Bool("json", false, "emit stable JSON output for agents")
 	root.AddCommand(
 		versionCmd(),
+		installCmd(),
 		initCmd(),
 		importCmd(),
 		statusCmd(),

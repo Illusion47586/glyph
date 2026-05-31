@@ -9,12 +9,14 @@ All commands support `--json` as a global flag. JSON mode is the preferred inter
 
 | Command | Purpose | Arguments | Flags |
 | --- | --- | --- | --- |
+| `glyph install` | Copy the running binary into the user bin directory and add that directory to PATH for new terminals. | None | `--bin-dir` |
 | `glyph init` | Initialize `.glyph/` in the current project. | None | None |
 | `glyph import <path>` | Import files from a workspace path into the public source graph. | `path`: directory to import | None |
 | `glyph status` | Show store status, database path, and object counts. | None | None |
 | `glyph graph` | Show source graph summary. | None | None |
 
 ```sh
+glyph install --json
 glyph init --json
 glyph import . --json
 glyph status --json
